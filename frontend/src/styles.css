@@ -1,0 +1,359 @@
+/* src/styles.css
+   CSS puro, sem framework, organizado por seções pra facilitar manutenção. */
+
+:root {
+  --cor-primaria: #1a7f37;
+  --cor-primaria-escura: #146129;
+  --cor-fundo: #f4f6f5;
+  --cor-cartao: #ffffff;
+  --cor-borda: #e0e3e1;
+  --cor-texto: #1f2422;
+  --cor-texto-fraco: #6b756f;
+  --cor-erro: #b3261e;
+  --cor-erro-fundo: #fceceb;
+  --cor-sucesso: #1a7f37;
+  --cor-sucesso-fundo: #e8f5e9;
+  --raio: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0 0 1rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin: 0 0 0.75rem;
+}
+
+/* ---------- layout ---------- */
+
+.pagina {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.pagina-central {
+  max-width: 420px;
+  margin: 3rem auto;
+  padding: 0 1rem;
+}
+
+.cabecalho-pagina {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.grade-duas-colunas {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 760px) {
+  .grade-duas-colunas {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- navbar ---------- */
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: var(--cor-cartao);
+  border-bottom: 1px solid var(--cor-borda);
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.navbar-marca {
+  font-weight: 700;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.navbar-links a {
+  color: var(--cor-texto);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.navbar-links a:hover {
+  color: var(--cor-primaria);
+}
+
+.navbar-usuario {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+
+/* ---------- cartão / formulário ---------- */
+
+.cartao {
+  background: var(--cor-cartao);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: 1.5rem;
+}
+
+.cartao-login {
+  margin-top: 2rem;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 420px;
+}
+
+.formulario label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--cor-texto-fraco);
+}
+
+.formulario input,
+.formulario select {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  font-size: 1rem;
+  color: var(--cor-texto);
+  background: white;
+}
+
+.formulario input:focus,
+.formulario select:focus {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 1px;
+}
+
+.acoes-formulario {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* ---------- botões ---------- */
+
+.btn {
+  display: inline-block;
+  padding: 0.55rem 1rem;
+  border-radius: var(--raio);
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+}
+
+.btn-primario {
+  background: var(--cor-primaria);
+  color: white;
+}
+
+.btn-primario:hover {
+  background: var(--cor-primaria-escura);
+}
+
+.btn-secundario {
+  background: white;
+  color: var(--cor-texto);
+  border-color: var(--cor-borda);
+}
+
+.btn-secundario:hover {
+  background: var(--cor-fundo);
+}
+
+.btn-perigo {
+  background: white;
+  color: var(--cor-erro);
+  border-color: var(--cor-erro);
+}
+
+.btn-perigo:hover {
+  background: var(--cor-erro-fundo);
+}
+
+.btn-pequeno {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.link {
+  background: none;
+  border: none;
+  color: var(--cor-primaria);
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+/* ---------- abas (login) ---------- */
+
+.abas {
+  display: flex;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+.aba {
+  flex: 1;
+  padding: 0.55rem;
+  background: white;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.aba-ativa {
+  background: var(--cor-primaria);
+  color: white;
+}
+
+/* ---------- tabela ---------- */
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--cor-cartao);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  overflow: hidden;
+}
+
+.tabela th,
+.tabela td {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--cor-borda);
+  font-size: 0.9rem;
+}
+
+.tabela th {
+  background: var(--cor-fundo);
+  color: var(--cor-texto-fraco);
+  font-weight: 600;
+}
+
+.tabela tr:last-child td {
+  border-bottom: none;
+}
+
+.acoes {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ---------- filtros / busca ---------- */
+
+.filtros {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.campo-busca {
+  flex: 1;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+}
+
+.filtros select {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: white;
+}
+
+/* ---------- etiquetas de status ---------- */
+
+.etiqueta {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.etiqueta-ativo {
+  background: var(--cor-sucesso-fundo);
+  color: var(--cor-sucesso);
+}
+
+.etiqueta-inativo {
+  background: #f1f1f1;
+  color: var(--cor-texto-fraco);
+}
+
+/* ---------- alertas ---------- */
+
+.alerta {
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--raio);
+  font-size: 0.88rem;
+}
+
+.alerta-erro {
+  background: var(--cor-erro-fundo);
+  color: var(--cor-erro);
+}
+
+.alerta-sucesso {
+  background: var(--cor-sucesso-fundo);
+  color: var(--cor-sucesso);
+}
+
+/* ---------- ficha de perfil ---------- */
+
+.ficha {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ficha-linha {
+  font-size: 0.95rem;
+}
+
+.texto-auxiliar {
+  color: var(--cor-texto-fraco);
+  font-size: 0.88rem;
+}
