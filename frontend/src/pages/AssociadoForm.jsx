@@ -1,6 +1,8 @@
 // src/pages/AssociadoForm.jsx
 // Uma página só, usada tanto para CRIAR (rota /associados/novo)
 // quanto para EDITAR (rota /associados/:id) um associado.
+// O status de pagamento não é editado aqui: ele tem sua ação própria na lista
+// de associados, para deixar claro que é uma ação separada do cadastro.
 
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -8,7 +10,7 @@ import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
 
-const VAZIO = { nome: '', apelido: '', telefone: '', senha: '', posicao: 'linha', nivel: '' };
+const VAZIO = { nome: '', apelido: '', telefone: '', senha: '' };
 
 export default function AssociadoForm() {
   const { id } = useParams();
@@ -32,8 +34,6 @@ export default function AssociadoForm() {
           apelido: a.apelido || '',
           telefone: a.telefone,
           senha: '', // senha nunca vem do backend; deixa em branco = "não alterar"
-          posicao: a.posicao,
-          nivel: a.nivel ?? '',
         })
       )
       .catch((err) => setErro(err.message))
@@ -53,8 +53,6 @@ export default function AssociadoForm() {
       nome: dados.nome,
       apelido: dados.apelido || null,
       telefone: dados.telefone,
-      posicao: dados.posicao,
-      nivel: dados.nivel === '' ? null : Number(dados.nivel),
     };
     // só manda senha se o admin realmente digitou uma nova
     if (dados.senha) payload.senha = dados.senha;
@@ -115,24 +113,6 @@ export default function AssociadoForm() {
             value={dados.senha}
             onChange={(e) => atualizarCampo('senha', e.target.value)}
             minLength={modoEdicao ? undefined : 6}
-          />
-        </label>
-
-        <label>
-          Posição
-          <select value={dados.posicao} onChange={(e) => atualizarCampo('posicao', e.target.value)}>
-            <option value="linha">Linha</option>
-            <option value="goleiro">Goleiro</option>
-            <option value="ambos">Ambos</option>
-          </select>
-        </label>
-
-        <label>
-          Nível (opcional, usado no sorteio de times no futuro)
-          <input
-            type="number"
-            value={dados.nivel}
-            onChange={(e) => atualizarCampo('nivel', e.target.value)}
           />
         </label>
 

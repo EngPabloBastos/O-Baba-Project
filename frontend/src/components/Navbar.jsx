@@ -22,10 +22,16 @@ export default function Navbar() {
           <>
             <Link to="/">Associados</Link>
             <Link to="/associados/novo">Novo associado</Link>
+            <Link to="/dias-baba">Dia de Baba</Link>
+            <Link to="/desempenhos">Desempenhos</Link>
             <Link to="/admins">Admins</Link>
           </>
         ) : (
-          <Link to="/">Meu perfil</Link>
+          <>
+            <Link to="/">Meu perfil</Link>
+            <Link to="/dias-baba">Dia de Baba</Link>
+            <Link to="/desempenhos">Desempenhos</Link>
+          </>
         )}
       </nav>
 

@@ -11,6 +11,10 @@ import Associados from './pages/Associados.jsx';
 import AssociadoForm from './pages/AssociadoForm.jsx';
 import Perfil from './pages/Perfil.jsx';
 import Admins from './pages/Admins.jsx';
+import DiasBaba from './pages/DiasBaba.jsx';
+import DiaBabaForm from './pages/DiaBabaForm.jsx';
+import DiaBabaDetalhe from './pages/DiaBabaDetalhe.jsx';
+import Desempenhos from './pages/Desempenhos.jsx';
 
 export default function App() {
   const { isAdmin } = useAuth();
@@ -53,6 +57,42 @@ export default function App() {
             element={
               <RotaProtegida somenteAdmin>
                 <Admins />
+              </RotaProtegida>
+            }
+          />
+
+          <Route
+            path="/dias-baba"
+            element={
+              <RotaProtegida>
+                <DiasBaba />
+              </RotaProtegida>
+            }
+          />
+
+          <Route
+            path="/dias-baba/novo"
+            element={
+              <RotaProtegida somenteAdmin>
+                <DiaBabaForm />
+              </RotaProtegida>
+            }
+          />
+
+          <Route
+            path="/dias-baba/:id"
+            element={
+              <RotaProtegida>
+                <DiaBabaDetalhe />
+              </RotaProtegida>
+            }
+          />
+
+          <Route
+            path="/desempenhos"
+            element={
+              <RotaProtegida>
+                <Desempenhos />
               </RotaProtegida>
             }
           />

@@ -1,14 +1,12 @@
 // src/pages/Associados.jsx
 // Lista todos os associados, com filtro de ativos/inativos e busca por nome.
-// Cada linha tem ações rápidas: ver/editar, desativar/reativar, excluir.
+// Cada linha tem ações rápidas: ver/editar, marcar pagamento, desativar/reativar, excluir.
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
-
-const POSICAO_LABEL = { linha: 'Linha', goleiro: 'Goleiro', ambos: 'Ambos' };
 
 export default function Associados() {
   const { token } = useAuth();
@@ -36,6 +34,16 @@ export default function Associados() {
     carregar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtro]);
+
+  async function alternarPagamento(associado) {
+    const novoStatus = associado.status_pagamento === 'pago' ? 'nao_pago' : 'pago';
+    try {
+      await api.alterarPagamento(token, associado.id, novoStatus);
+      carregar();
+    } catch (err) {
+      setErro(err.message);
+    }
+  }
 
   async function alternarAtivo(associado) {
     try {
@@ -105,7 +113,7 @@ export default function Associados() {
               <th>Nome</th>
               <th>Apelido</th>
               <th>Telefone</th>
-              <th>Posição</th>
+              <th>Pagamento</th>
               <th>Status</th>
               <th>Ações</th>
             </tr>
@@ -116,7 +124,16 @@ export default function Associados() {
                 <td>{a.nome}</td>
                 <td>{a.apelido || '—'}</td>
                 <td>{a.telefone}</td>
-                <td>{POSICAO_LABEL[a.posicao] || a.posicao}</td>
+                <td>
+                  <button
+                    className={`etiqueta etiqueta-${a.status_pagamento}`}
+                    style={{ border: 'none', cursor: 'pointer' }}
+                    onClick={() => alternarPagamento(a)}
+                    title="Clique para alternar"
+                  >
+                    {a.status_pagamento === 'pago' ? 'Pago' : 'Não pago'}
+                  </button>
+                </td>
                 <td>
                   <span className={`etiqueta ${a.ativo ? 'etiqueta-ativo' : 'etiqueta-inativo'}`}>
                     {a.ativo ? 'Ativo' : 'Inativo'}

@@ -1,0 +1,5 @@
+node_modules
+.env
+associacao.db
+associacao.db-shm
+associacao.db-wal

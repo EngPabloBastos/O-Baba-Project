@@ -38,7 +38,11 @@ function criarAdmin(req, res) {
     return res.status(400).json({ erro: 'A senha precisa ter pelo menos 6 caracteres.' });
   }
 
-  const jaExiste = db.prepare('SELECT id FROM admins WHERE telefone = ?').get(telefone);
+  // Remove espaços acidentais (ex: copiar/colar) para telefone de login e cadastro
+  // sempre baterem exatamente.
+  const telefoneLimpo = telefone.trim();
+
+  const jaExiste = db.prepare('SELECT id FROM admins WHERE telefone = ?').get(telefoneLimpo);
   if (jaExiste) {
     return res.status(409).json({ erro: 'Já existe um admin com esse telefone.' });
   }
@@ -47,7 +51,7 @@ function criarAdmin(req, res) {
 
   const resultado = db
     .prepare('INSERT INTO admins (nome, telefone, senha_hash) VALUES (?, ?, ?)')
-    .run(nome, telefone, senha_hash);
+    .run(nome, telefoneLimpo, senha_hash);
 
   const novoAdmin = db
     .prepare('SELECT id, nome, telefone, criado_em FROM admins WHERE id = ?')

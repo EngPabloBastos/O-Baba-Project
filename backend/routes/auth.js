@@ -17,7 +17,7 @@ router.post('/admin/login', (req, res) => {
     return res.status(400).json({ erro: 'Informe telefone e senha.' });
   }
 
-  const admin = db.prepare('SELECT * FROM admins WHERE telefone = ?').get(telefone);
+  const admin = db.prepare('SELECT * FROM admins WHERE telefone = ?').get(telefone.trim());
 
   if (!admin || !bcrypt.compareSync(senha, admin.senha_hash)) {
     return res.status(401).json({ erro: 'Telefone ou senha incorretos.' });
@@ -39,7 +39,7 @@ router.post('/associado/login', (req, res) => {
     return res.status(400).json({ erro: 'Informe telefone e senha.' });
   }
 
-  const associado = db.prepare('SELECT * FROM associados WHERE telefone = ?').get(telefone);
+  const associado = db.prepare('SELECT * FROM associados WHERE telefone = ?').get(telefone.trim());
 
   if (!associado || !bcrypt.compareSync(senha, associado.senha_hash)) {
     return res.status(401).json({ erro: 'Telefone ou senha incorretos.' });

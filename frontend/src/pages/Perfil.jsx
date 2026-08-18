@@ -7,8 +7,6 @@ import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
 
-const POSICAO_LABEL = { linha: 'Linha', goleiro: 'Goleiro', ambos: 'Ambos' };
-
 export default function Perfil() {
   const { token } = useAuth();
   const [perfil, setPerfil] = useState(null);
@@ -37,13 +35,11 @@ export default function Perfil() {
             <strong>Telefone:</strong> {perfil.telefone}
           </div>
           <div className="ficha-linha">
-            <strong>Posição:</strong> {POSICAO_LABEL[perfil.posicao] || perfil.posicao}
+            <strong>Pagamento deste mês:</strong>{' '}
+            <span className={`etiqueta etiqueta-${perfil.status_pagamento}`}>
+              {perfil.status_pagamento === 'pago' ? 'Pago' : 'Não pago'}
+            </span>
           </div>
-          {perfil.nivel != null && (
-            <div className="ficha-linha">
-              <strong>Nível:</strong> {perfil.nivel}
-            </div>
-          )}
           <div className="ficha-linha">
             <strong>Status:</strong>{' '}
             <span className={`etiqueta ${perfil.ativo ? 'etiqueta-ativo' : 'etiqueta-inativo'}`}>
@@ -51,7 +47,8 @@ export default function Perfil() {
             </span>
           </div>
           <p className="texto-auxiliar">
-            Precisa corrigir algum dado? Fale com um administrador da associação.
+            Precisa corrigir algum dado ou já pagou e o status não mudou? Fale com um administrador
+            da associação.
           </p>
         </div>
       )}
