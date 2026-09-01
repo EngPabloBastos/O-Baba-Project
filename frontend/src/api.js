@@ -2,7 +2,11 @@
 // Um único lugar que sabe conversar com o backend.
 // Toda a tela usa essa função em vez de chamar fetch() espalhado pelo código.
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Em produção (deploy junto com o backend), VITE_API_URL fica vazio de propósito:
+// como os dois rodam na mesma origem, "" + "/api/..." já forma a URL certa,
+// sem precisar saber o domínio de antemão. Por isso usamos "??" (não "||") —
+// uma string vazia definida de propósito não deve cair no valor padrão de dev.
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 async function request(path, { method = 'GET', body, token } = {}) {
   const headers = { 'Content-Type': 'application/json' };

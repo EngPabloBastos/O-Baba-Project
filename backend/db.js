@@ -5,7 +5,11 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 
-const db = new Database(path.join(__dirname, 'associacao.db'));
+// DB_PATH permite apontar o banco para fora da pasta do código (ex: um volume
+// montado no Docker/EasyPanel), o que evita perder os dados a cada novo deploy.
+// Se não for definido, usa o mesmo arquivo de sempre (bom para rodar local).
+const caminhoBanco = process.env.DB_PATH || path.join(__dirname, 'associacao.db');
+const db = new Database(caminhoBanco);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
