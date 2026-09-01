@@ -74,16 +74,48 @@ export const api = {
       body: { eh_suplente_para_time_id: ehSuplenteParaTimeId },
       token,
     }),
-  criarPartida: (token, id, timeAId, timeBId) =>
-    request(`/api/dias-baba/${id}/partidas`, {
-      method: 'POST',
-      body: { time_a_id: timeAId, time_b_id: timeBId },
+  moverJogador: (token, id, escalacaoId, timeId) =>
+    request(`/api/dias-baba/${id}/escalacoes/${escalacaoId}/time`, {
+      method: 'PATCH',
+      body: { time_id: timeId },
       token,
     }),
-  registrarPlacar: (token, id, partidaId, dados) =>
-    request(`/api/dias-baba/${id}/partidas/${partidaId}`, { method: 'PUT', body: dados, token }),
-  removerPartida: (token, id, partidaId) =>
-    request(`/api/dias-baba/${id}/partidas/${partidaId}`, { method: 'DELETE', token }),
+  removerJogador: (token, id, escalacaoId) =>
+    request(`/api/dias-baba/${id}/escalacoes/${escalacaoId}/remover`, { method: 'PATCH', token }),
+  adicionarAssociado: (token, id, associadoId, timeId) =>
+    request(`/api/dias-baba/${id}/escalacoes`, {
+      method: 'POST',
+      body: { associado_id: associadoId, time_id: timeId ?? null },
+      token,
+    }),
+  adicionarConvidado: (token, id, nome, timeId) =>
+    request(`/api/dias-baba/${id}/escalacoes`, {
+      method: 'POST',
+      body: { convidado_nome: nome, time_id: timeId ?? null },
+      token,
+    }),
+  criarTime: (token, id) => request(`/api/dias-baba/${id}/times`, { method: 'POST', token }),
+  apagarTime: (token, id, timeId) =>
+    request(`/api/dias-baba/${id}/times/${timeId}`, { method: 'DELETE', token }),
+  iniciarBaba: (token, id) =>
+    request(`/api/dias-baba/${id}/iniciar-baba`, { method: 'POST', token }),
+  iniciarPartida: (token, id, partidaId) =>
+    request(`/api/dias-baba/${id}/partidas/${partidaId}/iniciar`, { method: 'PATCH', token }),
+  registrarGol: (token, id, partidaId, escalacaoId, assistenciaEscalacaoId) =>
+    request(`/api/dias-baba/${id}/partidas/${partidaId}/gol`, {
+      method: 'POST',
+      body: { escalacao_id: escalacaoId, assistencia_escalacao_id: assistenciaEscalacaoId ?? null },
+      token,
+    }),
+  removerEvento: (token, id, partidaId, eventoId) =>
+    request(`/api/dias-baba/${id}/partidas/${partidaId}/eventos/${eventoId}`, {
+      method: 'DELETE',
+      token,
+    }),
+  encerrarPartida: (token, id, partidaId) =>
+    request(`/api/dias-baba/${id}/partidas/${partidaId}/encerrar`, { method: 'PATCH', token }),
+  reabrirPartida: (token, id, partidaId) =>
+    request(`/api/dias-baba/${id}/partidas/${partidaId}/reabrir`, { method: 'PATCH', token }),
   finalizarDiaBaba: (token, id) =>
     request(`/api/dias-baba/${id}/finalizar`, { method: 'PATCH', body: {}, token }),
 

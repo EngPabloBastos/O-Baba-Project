@@ -72,11 +72,18 @@ db.exec(`
     data TEXT NOT NULL,
     formato TEXT CHECK (formato IN ('4x4', '5x5')),
     status TEXT NOT NULL DEFAULT 'aberto' CHECK (status IN ('aberto', 'finalizado')),
+    baba_iniciado INTEGER NOT NULL DEFAULT 0,
     criado_por_admin_id INTEGER REFERENCES admins(id),
     criado_em TEXT NOT NULL DEFAULT (datetime('now')),
     finalizado_em TEXT
   );
 `);
+{
+  const colunasDia = db.prepare('PRAGMA table_info(dias_baba)').all().map((c) => c.name);
+  if (!colunasDia.includes('baba_iniciado')) {
+    db.exec(`ALTER TABLE dias_baba ADD COLUMN baba_iniciado INTEGER NOT NULL DEFAULT 0`);
+  }
+}
 
 // Convidados presentes num Dia de Baba específico (não são associados).
 db.exec(`
@@ -112,16 +119,56 @@ db.exec(`
 `);
 
 // Partidas (confrontos) realizadas dentro de um Dia de Baba entre dois times sorteados.
+// O motor de fila cria as partidas automaticamente (a primeira ao "Iniciar Baba",
+// as seguintes ao encerrar a anterior) — o admin não escolhe manualmente quem
+// joga contra quem. gols_time_a/gols_time_b começam em 0 e sobem em tempo real
+// conforme os gols são registrados; "encerrada" marca quando o admin fechou o
+// placar daquele confronto (o que também dispara o avanço da fila).
 db.exec(`
   CREATE TABLE IF NOT EXISTS partidas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     dia_baba_id INTEGER NOT NULL REFERENCES dias_baba(id) ON DELETE CASCADE,
     time_a_id INTEGER NOT NULL REFERENCES times_dia(id),
     time_b_id INTEGER NOT NULL REFERENCES times_dia(id),
-    gols_time_a INTEGER,
-    gols_time_b INTEGER,
+    gols_time_a INTEGER NOT NULL DEFAULT 0,
+    gols_time_b INTEGER NOT NULL DEFAULT 0,
     ordem INTEGER NOT NULL DEFAULT 1,
+    iniciada INTEGER NOT NULL DEFAULT 0,
+    encerrada INTEGER NOT NULL DEFAULT 0,
+    encerrada_em TEXT,
+    fila_antes_encerrar TEXT,
+    partida_seguinte_id INTEGER REFERENCES partidas(id),
+    mensagem_desempate TEXT,
     criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+{
+  const colunasPartida = db.prepare('PRAGMA table_info(partidas)').all().map((c) => c.name);
+  const novasColunas = {
+    iniciada: `ALTER TABLE partidas ADD COLUMN iniciada INTEGER NOT NULL DEFAULT 0`,
+    encerrada: `ALTER TABLE partidas ADD COLUMN encerrada INTEGER NOT NULL DEFAULT 0`,
+    encerrada_em: `ALTER TABLE partidas ADD COLUMN encerrada_em TEXT`,
+    fila_antes_encerrar: `ALTER TABLE partidas ADD COLUMN fila_antes_encerrar TEXT`,
+    partida_seguinte_id: `ALTER TABLE partidas ADD COLUMN partida_seguinte_id INTEGER REFERENCES partidas(id)`,
+    mensagem_desempate: `ALTER TABLE partidas ADD COLUMN mensagem_desempate TEXT`,
+  };
+  for (const [coluna, sql] of Object.entries(novasColunas)) {
+    if (!colunasPartida.includes(coluna)) db.exec(sql);
+  }
+  // bancos criados antes do DEFAULT 0 existir podem ter ficado com gols NULL
+  db.exec(`UPDATE partidas SET gols_time_a = 0 WHERE gols_time_a IS NULL`);
+  db.exec(`UPDATE partidas SET gols_time_b = 0 WHERE gols_time_b IS NULL`);
+}
+
+// Fila de times aguardando para jogar (formato "vencedor fica"). Só existe
+// depois que o admin clica em "Iniciar Baba". Os dois times da partida ao vivo
+// NÃO estão nesta tabela — só entram aqui de novo se perderem ou empatarem.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS fila_times (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    dia_baba_id INTEGER NOT NULL REFERENCES dias_baba(id) ON DELETE CASCADE,
+    time_id INTEGER NOT NULL REFERENCES times_dia(id),
+    posicao INTEGER NOT NULL
   );
 `);
 

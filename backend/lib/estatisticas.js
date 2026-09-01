@@ -51,7 +51,7 @@ function calcularEstatisticas(filtros = {}) {
   for (const idDia of diasRelevantes) {
     const partidas = db
       .prepare(
-        `SELECT * FROM partidas WHERE dia_baba_id = ? AND gols_time_a IS NOT NULL AND gols_time_b IS NOT NULL`
+        `SELECT * FROM partidas WHERE dia_baba_id = ? AND encerrada = 1`
       )
       .all(idDia);
 

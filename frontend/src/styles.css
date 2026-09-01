@@ -408,6 +408,79 @@ h2 {
   width: 4.5rem;
 }
 
+.placar-destaque {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: var(--cor-primaria);
+  color: #fff;
+  border-radius: var(--raio);
+  padding: 1rem;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+}
+
+.placar-numero {
+  font-size: 1.6rem;
+  font-weight: 700;
+  min-width: 1.5ch;
+  text-align: center;
+}
+
+.lista-jogadores-simples {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.95rem;
+}
+
+.lista-jogadores-simples li {
+  padding: 0.25rem 0;
+}
+
+.btn-gol {
+  display: block;
+  width: 100%;
+  font-size: 1.2rem;
+  font-weight: 700;
+  padding: 0.9rem;
+  margin: 1rem 0;
+  letter-spacing: 0.05em;
+}
+
+.painel-gol {
+  background: #f8faf8;
+  border: 1px solid var(--cor-primaria);
+}
+
+.painel-gol strong {
+  display: block;
+  margin: 0.8rem 0 0.4rem;
+}
+
+.pilulas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pilula {
+  border: 1px solid var(--cor-borda);
+  background: #fff;
+  color: var(--cor-texto);
+  border-radius: 999px;
+  padding: 0.5rem 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pilula-selecionada {
+  background: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+  color: #fff;
+}
+
 /* ---------- alertas ---------- */
 
 .alerta {
