@@ -95,6 +95,32 @@ router.get('/:id', autenticar, (req, res) => {
   res.json(associado);
 });
 
+// PATCH /api/associados/me/senha  -> o próprio associado troca a própria senha
+// body: { senha_atual, senha_nova }. Exige a senha atual por segurança.
+router.patch('/me/senha', autenticar, (req, res) => {
+  if (req.user.role !== 'associado') {
+    return res.status(403).json({ erro: 'Rota disponível apenas para associados.' });
+  }
+
+  const { senha_atual, senha_nova } = req.body;
+  if (!senha_atual || !senha_nova) {
+    return res.status(400).json({ erro: 'Informe a senha atual e a nova senha.' });
+  }
+  if (senha_nova.length < 6) {
+    return res.status(400).json({ erro: 'A nova senha precisa ter pelo menos 6 caracteres.' });
+  }
+
+  const associado = db.prepare('SELECT * FROM associados WHERE id = ?').get(req.user.id);
+  if (!associado || !bcrypt.compareSync(senha_atual, associado.senha_hash)) {
+    return res.status(401).json({ erro: 'Senha atual incorreta.' });
+  }
+
+  const novaSenhaHash = bcrypt.hashSync(senha_nova, 10);
+  db.prepare('UPDATE associados SET senha_hash = ? WHERE id = ?').run(novaSenhaHash, req.user.id);
+
+  res.json({ mensagem: 'Senha alterada com sucesso.' });
+});
+
 // PUT /api/associados/:id  -> editar dados (somente admin)
 // Não altera status_pagamento aqui de propósito: isso tem rota própria (PATCH /:id/pagamento)
 // para deixar claro no histórico/permissões que é uma ação distinta.

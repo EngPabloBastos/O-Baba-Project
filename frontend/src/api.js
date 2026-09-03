@@ -50,6 +50,12 @@ export const api = {
   },
   buscarAssociado: (token, id) => request(`/api/associados/${id}`, { token }),
   buscarMeuPerfil: (token) => request('/api/associados/me', { token }),
+  trocarMinhaSenha: (token, senhaAtual, senhaNova) =>
+    request('/api/associados/me/senha', {
+      method: 'PATCH',
+      body: { senha_atual: senhaAtual, senha_nova: senhaNova },
+      token,
+    }),
   criarAssociado: (token, dados) =>
     request('/api/associados', { method: 'POST', body: dados, token }),
   editarAssociado: (token, id, dados) =>
