@@ -9,6 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
+import { Botao, Campo, Cartao, Secao, Titulo } from '../components/ui.jsx';
 
 const VAZIO = { nome: '', apelido: '', telefone: '', senha: '' };
 
@@ -72,65 +73,70 @@ export default function AssociadoForm() {
     }
   }
 
-  if (carregando) return <p className="pagina">Carregando...</p>;
+  if (carregando) return <p className="px-container-padding pt-md text-body-md text-on-surface-variant">Carregando...</p>;
 
   return (
-    <div className="pagina">
-      <h1>{modoEdicao ? 'Editar associado' : 'Novo associado'}</h1>
+    <div className="flex flex-col w-full pb-20">
+      <Secao className="flex-row items-center gap-sm pt-lg">
+        <button
+          onClick={() => navigate('/')}
+          className="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface-variant/10 transition-colors"
+        >
+          <span className="material-symbols-outlined">arrow_back</span>
+        </button>
+        <Titulo>{modoEdicao ? 'Editar associado' : 'Novo associado'}</Titulo>
+      </Secao>
 
-      <form onSubmit={salvar} className="formulario cartao">
-        <label>
-          Nome completo
-          <input
-            value={dados.nome}
-            onChange={(e) => atualizarCampo('nome', e.target.value)}
-            required
-          />
-        </label>
+      <Secao>
+        <Cartao>
+          <form onSubmit={salvar} className="flex flex-col gap-md">
+            <Campo
+              label="Nome completo"
+              icone="person"
+              value={dados.nome}
+              onChange={(e) => atualizarCampo('nome', e.target.value)}
+              required
+            />
 
-        <label>
-          Apelido (opcional)
-          <input
-            value={dados.apelido}
-            onChange={(e) => atualizarCampo('apelido', e.target.value)}
-          />
-        </label>
+            <Campo
+              label="Apelido (opcional)"
+              icone="badge"
+              value={dados.apelido}
+              onChange={(e) => atualizarCampo('apelido', e.target.value)}
+            />
 
-        <label>
-          Telefone
-          <input
-            value={dados.telefone}
-            onChange={(e) => atualizarCampo('telefone', e.target.value)}
-            placeholder="75988887777"
-            required
-          />
-        </label>
+            <Campo
+              label="Telefone"
+              icone="smartphone"
+              value={dados.telefone}
+              onChange={(e) => atualizarCampo('telefone', e.target.value)}
+              placeholder="75988887777"
+              required
+            />
 
-        <label>
-          {modoEdicao ? 'Nova senha (deixe em branco para manter)' : 'Senha (mínimo 6 caracteres)'}
-          <input
-            type="password"
-            value={dados.senha}
-            onChange={(e) => atualizarCampo('senha', e.target.value)}
-            minLength={modoEdicao ? undefined : 6}
-          />
-        </label>
+            <Campo
+              label={modoEdicao ? 'Nova senha (deixe em branco para manter)' : 'Senha (mínimo 6 caracteres)'}
+              icone="lock"
+              type="password"
+              value={dados.senha}
+              onChange={(e) => atualizarCampo('senha', e.target.value)}
+              minLength={modoEdicao ? undefined : 6}
+            />
 
-        <Alerta tipo="erro">{erro}</Alerta>
+            <Alerta tipo="erro">{erro}</Alerta>
 
-        <div className="acoes-formulario">
-          <button className="btn btn-primario" type="submit" disabled={salvando}>
-            {salvando ? 'Salvando...' : 'Salvar'}
-          </button>
-          <button
-            className="btn btn-secundario"
-            type="button"
-            onClick={() => navigate('/')}
-          >
-            Cancelar
-          </button>
-        </div>
-      </form>
+            <div className="flex gap-sm mt-sm">
+              <Botao variante="primario" type="submit" disabled={salvando} className="flex-1">
+                {salvando ? 'Salvando...' : 'Salvar'}
+              </Botao>
+              <Botao variante="secundario" type="button" onClick={() => navigate('/')}>
+                Cancelar
+              </Botao>
+            </div>
+          </form>
+        </Cartao>
+      </Secao>
     </div>
   );
 }
+

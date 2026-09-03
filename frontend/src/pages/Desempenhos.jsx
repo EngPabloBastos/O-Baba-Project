@@ -6,12 +6,13 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
+import { Avatar, Cartao, Secao, Titulo } from '../components/ui.jsx';
 
 const TIPOS = [
-  { valor: 'pontuacao', rotulo: 'Pontuação' },
-  { valor: 'gols', rotulo: 'Gols' },
-  { valor: 'assistencias', rotulo: 'Assistências' },
-  { valor: 'vitorias', rotulo: 'Vitórias' },
+  { valor: 'pontuacao', rotulo: 'Pontuação', icone: 'military_tech' },
+  { valor: 'gols', rotulo: 'Gols', icone: 'sports_soccer' },
+  { valor: 'assistencias', rotulo: 'Assistências', icone: 'ads_click' },
+  { valor: 'vitorias', rotulo: 'Vitórias', icone: 'emoji_events' },
 ];
 
 const ANO_ATUAL = new Date().getFullYear();
@@ -20,6 +21,8 @@ const NOMES_MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
+
+const CORES_PODIO = ['bg-tertiary-fixed text-on-tertiary-fixed-variant', 'bg-surface-container-high text-on-surface', 'bg-[#e6c199] text-[#5c3a1e]'];
 
 export default function Desempenhos() {
   const { token, usuario } = useAuth();
@@ -42,31 +45,57 @@ export default function Desempenhos() {
   }, [token, tipo, periodo, ano, mes]);
 
   const minhaPosicao = ranking.find((r) => r.associado_id === usuario.id);
+  const tipoAtual = TIPOS.find((t) => t.valor === tipo);
 
   return (
-    <div className="pagina">
-      <h1>Desempenhos</h1>
+    <div className="flex flex-col w-full pb-20">
+      <Secao className="pt-lg">
+        <Titulo>Rankings</Titulo>
+      </Secao>
 
-      <div className="abas">
-        <button className={`aba ${periodo === 'mensal' ? 'aba-ativa' : ''}`} onClick={() => setPeriodo('mensal')}>
-          Mensal
-        </button>
-        <button className={`aba ${periodo === 'anual' ? 'aba-ativa' : ''}`} onClick={() => setPeriodo('anual')}>
-          Anual
-        </button>
-      </div>
+      <Secao className="pt-0">
+        <div className="flex bg-surface-variant rounded-xl p-1">
+          <button
+            className={`flex-1 font-label-bold text-label-bold py-sm text-center rounded-lg transition-colors ${
+              periodo === 'mensal' ? 'bg-surface text-primary shadow-sm' : 'text-on-surface-variant'
+            }`}
+            onClick={() => setPeriodo('mensal')}
+          >
+            Mensal
+          </button>
+          <button
+            className={`flex-1 font-label-bold text-label-bold py-sm text-center rounded-lg transition-colors ${
+              periodo === 'anual' ? 'bg-surface text-primary shadow-sm' : 'text-on-surface-variant'
+            }`}
+            onClick={() => setPeriodo('anual')}
+          >
+            Anual
+          </button>
+        </div>
+      </Secao>
 
-      <div className="filtros" style={{ marginTop: '0.8rem' }}>
-        <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
-          {TIPOS.map((t) => (
-            <option key={t.valor} value={t.valor}>
-              Ranking de {t.rotulo}
-            </option>
-          ))}
-        </select>
+      <Secao className="pt-0 flex-row overflow-x-auto no-scrollbar gap-sm">
+        {TIPOS.map((t) => (
+          <button
+            key={t.valor}
+            onClick={() => setTipo(t.valor)}
+            className={`flex items-center gap-1 shrink-0 px-md py-sm rounded-full font-label-bold text-label-sm transition-colors ${
+              tipo === t.valor ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px]">{t.icone}</span>
+            {t.rotulo}
+          </button>
+        ))}
+      </Secao>
 
+      <Secao className="pt-0 flex-row gap-sm">
         {periodo === 'mensal' && (
-          <select value={mes} onChange={(e) => setMes(Number(e.target.value))}>
+          <select
+            className="h-11 px-sm rounded-xl bg-surface-container text-on-surface font-body-md flex-1 focus:outline-none focus:ring-2 focus:ring-primary"
+            value={mes}
+            onChange={(e) => setMes(Number(e.target.value))}
+          >
             {NOMES_MESES.map((nome, indice) => (
               <option key={nome} value={indice + 1}>
                 {nome}
@@ -74,56 +103,69 @@ export default function Desempenhos() {
             ))}
           </select>
         )}
-
-        <select value={ano} onChange={(e) => setAno(Number(e.target.value))}>
+        <select
+          className="h-11 px-sm rounded-xl bg-surface-container text-on-surface font-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+          value={ano}
+          onChange={(e) => setAno(Number(e.target.value))}
+        >
           {[ANO_ATUAL, ANO_ATUAL - 1, ANO_ATUAL - 2].map((a) => (
             <option key={a} value={a}>
               {a}
             </option>
           ))}
         </select>
-      </div>
+      </Secao>
 
-      <Alerta tipo="erro">{erro}</Alerta>
+      <Secao className="pt-0">
+        <Alerta tipo="erro">{erro}</Alerta>
+      </Secao>
 
       {!carregando && usuario.role === 'associado' && (
-        <p className="texto-auxiliar" style={{ marginTop: '0.6rem' }}>
-          {minhaPosicao
-            ? `Sua posição no ranking de ${TIPOS.find((t) => t.valor === tipo).rotulo.toLowerCase()}: ${minhaPosicao.posicao}º lugar.`
-            : 'Você ainda não pontuou neste período.'}
-        </p>
+        <Secao className="pt-0">
+          <Cartao className="bg-primary/5 border border-primary/20 py-sm">
+            <p className="text-body-md text-primary text-center">
+              {minhaPosicao
+                ? `Sua posição no ranking de ${tipoAtual.rotulo.toLowerCase()}: ${minhaPosicao.posicao}º lugar`
+                : 'Você ainda não pontuou neste período.'}
+            </p>
+          </Cartao>
+        </Secao>
       )}
 
-      {carregando ? (
-        <p>Carregando...</p>
-      ) : ranking.length === 0 ? (
-        <p className="texto-auxiliar">Nenhuma estatística registrada neste período.</p>
-      ) : (
-        <table className="tabela">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Associado</th>
-              <th>Gols</th>
-              <th>Assistências</th>
-              <th>Vitórias</th>
-              <th>Pontuação</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ranking.map((r) => (
-              <tr key={r.associado_id} style={r.associado_id === usuario.id ? { fontWeight: 700 } : undefined}>
-                <td>{r.posicao}º</td>
-                <td>{r.apelido || r.nome}</td>
-                <td>{r.gols}</td>
-                <td>{r.assistencias}</td>
-                <td>{r.vitorias}</td>
-                <td>{r.pontuacao}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <Secao className="gap-sm">
+        {carregando ? (
+          <p className="text-body-md text-on-surface-variant">Carregando...</p>
+        ) : ranking.length === 0 ? (
+          <p className="text-body-md text-on-surface-variant">Nenhuma estatística registrada neste período.</p>
+        ) : (
+          ranking.map((r) => {
+            const souEu = r.associado_id === usuario.id;
+            const corPodio = r.posicao <= 3 ? CORES_PODIO[r.posicao - 1] : 'bg-surface-container text-on-surface-variant';
+            return (
+              <Cartao
+                key={r.associado_id}
+                className={`flex items-center gap-md ${souEu ? 'border-2 border-primary' : ''}`}
+              >
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center font-label-bold shrink-0 ${corPodio}`}>
+                  {r.posicao}
+                </div>
+                <Avatar nome={r.apelido || r.nome} tamanho={40} tom={souEu ? 'verde' : 'neutro'} />
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="font-label-bold text-on-surface truncate">
+                    {r.apelido || r.nome}
+                    {souEu ? ' (você)' : ''}
+                  </span>
+                  <span className="text-label-sm text-on-surface-variant">
+                    {r.gols}G · {r.assistencias}A · {r.vitorias}V
+                  </span>
+                </div>
+                <span className="font-headline-md text-headline-md text-primary shrink-0">{r[tipo]}</span>
+              </Cartao>
+            );
+          })
+        )}
+      </Secao>
     </div>
   );
 }
+

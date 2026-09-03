@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
+import { Botao, Campo } from '../components/ui.jsx';
+import logo from '../assets/logo.png';
 
 export default function Login() {
   const [aba, setAba] = useState('admin'); // 'admin' | 'associado' | 'primeiroAdmin'
@@ -16,6 +18,7 @@ export default function Login() {
   const [nome, setNome] = useState('');
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -56,112 +59,167 @@ export default function Login() {
   }
 
   return (
-    <div className="pagina-central">
-      <div className="cartao cartao-login">
-        <h1>⚽ Associação de Futebol</h1>
+    <div className="flex flex-col w-full min-h-screen relative overflow-hidden bg-background">
+      {/* fundo com grade sutil, decorativo */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none">
+        <svg height="100%" width="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern height="40" id="grid" patternUnits="userSpaceOnUse" width="40">
+              <path className="text-primary opacity-10" d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1" />
+            </pattern>
+          </defs>
+          <rect fill="url(#grid)" height="100%" width="100%" />
+        </svg>
+      </div>
 
-        {aba !== 'primeiroAdmin' && (
-          <>
-            <div className="abas">
-              <button
-                className={`aba ${aba === 'admin' ? 'aba-ativa' : ''}`}
-                onClick={() => setAba('admin')}
-                type="button"
-              >
-                Admin
-              </button>
-              <button
-                className={`aba ${aba === 'associado' ? 'aba-ativa' : ''}`}
-                onClick={() => setAba('associado')}
-                type="button"
-              >
-                Associado
-              </button>
-            </div>
+      <div className="flex-1 flex flex-col justify-center px-container-padding py-xl z-10 relative">
+        <div className="flex flex-col items-center mb-xl">
+          <div className="w-[88px] h-[88px] rounded-2xl overflow-hidden shadow-md mb-md">
+            <img src={logo} alt="Baba Manager" className="w-full h-full object-cover" />
+          </div>
+          <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-background text-center tracking-tight">
+            Baba Manager
+          </h1>
+          <p className="font-body-md text-body-md text-on-surface-variant text-center mt-xs">
+            Seu clube, sua gestão.
+          </p>
+        </div>
 
-            <form onSubmit={entrar} className="formulario">
-              <label>
-                Telefone
-                <input
-                  type="text"
+        <div className="bg-surface-container rounded-[24px] p-container-padding shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-tertiary" />
+
+          {aba !== 'primeiroAdmin' ? (
+            <>
+              <div className="flex bg-surface-variant rounded-xl p-1 mb-lg relative">
+                <div
+                  className="absolute top-1 left-1 bottom-1 w-[calc(50%-4px)] bg-surface shadow-sm rounded-lg transition-transform duration-300 ease-out z-0"
+                  style={{ transform: aba === 'associado' ? 'translateX(100%)' : 'translateX(0)' }}
+                />
+                <button
+                  className={`flex-1 relative z-10 font-label-bold text-label-bold py-sm text-center rounded-lg transition-colors duration-200 ${
+                    aba === 'admin' ? 'text-primary' : 'text-on-surface-variant'
+                  }`}
+                  onClick={() => setAba('admin')}
+                  type="button"
+                >
+                  Admin
+                </button>
+                <button
+                  className={`flex-1 relative z-10 font-label-bold text-label-bold py-sm text-center rounded-lg transition-colors duration-200 ${
+                    aba === 'associado' ? 'text-primary' : 'text-on-surface-variant'
+                  }`}
+                  onClick={() => setAba('associado')}
+                  type="button"
+                >
+                  Associado
+                </button>
+              </div>
+
+              <form onSubmit={entrar} className="flex flex-col gap-md">
+                <Campo
+                  label="Telefone"
+                  icone="smartphone"
+                  type="tel"
+                  autoComplete="tel"
                   value={telefone}
                   onChange={(e) => setTelefone(e.target.value)}
                   placeholder="75999990000"
                   required
                 />
-              </label>
 
-              <label>
-                Senha
-                <input
-                  type="password"
-                  value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
-                  required
-                />
-              </label>
+                <div className="flex flex-col gap-xs w-full">
+                  <span className="font-label-sm text-label-sm text-on-surface-variant ml-1">Senha</span>
+                  <div className="relative flex items-center">
+                    <span className="material-symbols-outlined absolute left-md text-on-surface-variant text-[20px] pointer-events-none">
+                      lock
+                    </span>
+                    <input
+                      type={mostrarSenha ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      value={senha}
+                      onChange={(e) => setSenha(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="w-full bg-surface-container text-on-surface font-body-md text-body-md rounded-xl pl-[44px] pr-[44px] py-[14px] outline-none border-2 border-transparent focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Mostrar senha"
+                      onClick={() => setMostrarSenha((v) => !v)}
+                      className="absolute right-md text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center w-8 h-8 rounded-full"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        {mostrarSenha ? 'visibility' : 'visibility_off'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
 
-              <Alerta tipo="erro">{erro}</Alerta>
+                <Alerta tipo="erro">{erro}</Alerta>
 
-              <button className="btn btn-primario" type="submit" disabled={carregando}>
-                {carregando ? 'Entrando...' : 'Entrar'}
-              </button>
-            </form>
-
-            <p className="texto-auxiliar">
-              Primeiro acesso e ainda não existe nenhum admin?{' '}
-              <button className="link" type="button" onClick={() => setAba('primeiroAdmin')}>
-                Criar o primeiro admin
-              </button>
-            </p>
-          </>
-        )}
-
-        {aba === 'primeiroAdmin' && (
-          <>
-            <h2>Criar primeiro admin</h2>
-            <p className="texto-auxiliar">
-              Isso só funciona se ainda não existir nenhum admin cadastrado no backend.
-            </p>
-            <form onSubmit={criarPrimeiroAdmin} className="formulario">
-              <label>
-                Nome
-                <input value={nome} onChange={(e) => setNome(e.target.value)} required />
-              </label>
-              <label>
-                Telefone
-                <input
+                <Botao variante="primario" tamanho="grande" type="submit" disabled={carregando} className="w-full mt-sm">
+                  {carregando ? 'Entrando...' : 'Entrar'}
+                  <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                </Botao>
+              </form>
+            </>
+          ) : (
+            <>
+              <h2 className="font-headline-md text-headline-md text-on-surface mb-xs">Criar primeiro admin</h2>
+              <p className="font-body-md text-body-md text-on-surface-variant mb-md">
+                Isso só funciona se ainda não existir nenhum admin cadastrado no backend.
+              </p>
+              <form onSubmit={criarPrimeiroAdmin} className="flex flex-col gap-md">
+                <Campo label="Nome" icone="person" value={nome} onChange={(e) => setNome(e.target.value)} required />
+                <Campo
+                  label="Telefone"
+                  icone="smartphone"
                   value={telefone}
                   onChange={(e) => setTelefone(e.target.value)}
                   required
                 />
-              </label>
-              <label>
-                Senha (mínimo 6 caracteres)
-                <input
+                <Campo
+                  label="Senha (mínimo 6 caracteres)"
+                  icone="lock"
                   type="password"
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
                   minLength={6}
                   required
                 />
-              </label>
 
-              <Alerta tipo="erro">{erro}</Alerta>
+                <Alerta tipo="erro">{erro}</Alerta>
 
-              <button className="btn btn-primario" type="submit" disabled={carregando}>
-                {carregando ? 'Criando...' : 'Criar e entrar'}
-              </button>
-            </form>
+                <Botao variante="primario" tamanho="grande" type="submit" disabled={carregando} className="w-full mt-sm">
+                  {carregando ? 'Criando...' : 'Criar e entrar'}
+                </Botao>
+              </form>
 
-            <p className="texto-auxiliar">
-              <button className="link" type="button" onClick={() => setAba('admin')}>
+              <button
+                className="font-label-bold text-label-bold text-primary mt-md w-full text-center"
+                type="button"
+                onClick={() => setAba('admin')}
+              >
                 Voltar para o login
               </button>
-            </p>
-          </>
+            </>
+          )}
+        </div>
+
+        {aba !== 'primeiroAdmin' && (
+          <div className="mt-xl flex flex-col items-center gap-2">
+            <p className="font-body-md text-body-md text-on-surface-variant">Primeiro acesso e ainda não existe nenhum admin?</p>
+            <button
+              className="font-label-bold text-label-bold text-primary px-4 py-2 rounded-full hover:bg-primary/5 active:bg-primary/10 transition-colors"
+              type="button"
+              onClick={() => setAba('primeiroAdmin')}
+            >
+              Criar o primeiro admin
+            </button>
+          </div>
         )}
       </div>
     </div>
   );
 }
+

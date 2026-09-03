@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
+import { Avatar, Cartao, Etiqueta, Secao, Titulo } from '../components/ui.jsx';
 
 export default function Perfil() {
   const { token } = useAuth();
@@ -17,41 +18,43 @@ export default function Perfil() {
   }, [token]);
 
   return (
-    <div className="pagina pagina-central">
-      <h1>Meu perfil</h1>
-      <Alerta tipo="erro">{erro}</Alerta>
+    <div className="flex flex-col w-full pb-20">
+      <Secao className="pt-lg">
+        <Titulo>Meu perfil</Titulo>
+      </Secao>
+
+      <Secao>
+        <Alerta tipo="erro">{erro}</Alerta>
+      </Secao>
 
       {perfil && (
-        <div className="cartao ficha">
-          <div className="ficha-linha">
-            <strong>Nome:</strong> {perfil.nome}
-          </div>
-          {perfil.apelido && (
-            <div className="ficha-linha">
-              <strong>Apelido:</strong> {perfil.apelido}
+        <Secao>
+          <Cartao className="flex flex-col items-center text-center gap-sm py-lg">
+            <Avatar nome={perfil.apelido || perfil.nome} tamanho={72} tom="verde" />
+            <div>
+              <p className="font-headline-md text-headline-md text-on-surface">{perfil.nome}</p>
+              {perfil.apelido && <p className="text-body-md text-on-surface-variant">{perfil.apelido}</p>}
             </div>
-          )}
-          <div className="ficha-linha">
-            <strong>Telefone:</strong> {perfil.telefone}
-          </div>
-          <div className="ficha-linha">
-            <strong>Pagamento deste mês:</strong>{' '}
-            <span className={`etiqueta etiqueta-${perfil.status_pagamento}`}>
-              {perfil.status_pagamento === 'pago' ? 'Pago' : 'Não pago'}
-            </span>
-          </div>
-          <div className="ficha-linha">
-            <strong>Status:</strong>{' '}
-            <span className={`etiqueta ${perfil.ativo ? 'etiqueta-ativo' : 'etiqueta-inativo'}`}>
-              {perfil.ativo ? 'Ativo' : 'Inativo'}
-            </span>
-          </div>
-          <p className="texto-auxiliar">
-            Precisa corrigir algum dado ou já pagou e o status não mudou? Fale com um administrador
-            da associação.
+            <p className="text-body-md text-on-surface-variant flex items-center gap-1">
+              <span className="material-symbols-outlined text-[18px]">smartphone</span>
+              {perfil.telefone}
+            </p>
+
+            <div className="flex gap-sm mt-sm">
+              <Etiqueta tom={perfil.status_pagamento === 'pago' ? 'verde' : 'vermelho'}>
+                {perfil.status_pagamento === 'pago' ? 'Pago' : 'Não pago'}
+              </Etiqueta>
+              <Etiqueta tom={perfil.ativo ? 'neutro' : 'vermelho'}>{perfil.ativo ? 'Ativo' : 'Inativo'}</Etiqueta>
+            </div>
+          </Cartao>
+
+          <p className="text-label-sm text-on-surface-variant text-center px-md">
+            Precisa corrigir algum dado ou já pagou e o status não mudou? Fale com um administrador da
+            associação.
           </p>
-        </div>
+        </Secao>
       )}
     </div>
   );
 }
+

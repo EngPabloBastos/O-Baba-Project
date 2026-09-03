@@ -7,6 +7,24 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
+import { Avatar, Botao, Cartao, Etiqueta, Secao, Titulo } from '../components/ui.jsx';
+
+// pílula de seleção reutilizada em vários pontos (escolher time, jogador, etc)
+function Pilula({ selecionada, children, ...props }) {
+  return (
+    <button
+      type="button"
+      className={`px-md py-sm rounded-full font-label-bold text-label-sm border-2 transition-colors ${
+        selecionada
+          ? 'bg-primary text-on-primary border-primary'
+          : 'bg-surface-container-lowest text-on-surface border-outline-variant hover:border-primary/50'
+      }`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function DiaBabaDetalhe() {
   const { id } = useParams();
@@ -83,68 +101,90 @@ export default function DiaBabaDetalhe() {
     acao(api.finalizarDiaBaba(token, id));
   }
 
-  if (carregando) return <p className="pagina">Carregando...</p>;
-  if (!dia) return <p className="pagina">{erro || 'Dia de Baba não encontrado.'}</p>;
+  if (carregando) return <p className="px-container-padding pt-md text-body-md text-on-surface-variant">Carregando...</p>;
+  if (!dia) return <p className="px-container-padding pt-md text-body-md text-on-surface-variant">{erro || 'Dia de Baba não encontrado.'}</p>;
 
   const editavel = isAdmin && dia.status === 'aberto';
   const temTimes = dia.times.length > 0;
   const partidaReabrivel = dia.partidas_finalizadas.findLast?.((p) => p.pode_reabrir) || null;
 
   return (
-    <div className="pagina">
-      <div className="cabecalho-pagina">
-        <div>
-          <h1>Dia de Baba — {new Date(`${dia.data}T00:00:00`).toLocaleDateString('pt-BR')}</h1>
-          <span className={`etiqueta etiqueta-${dia.status}`}>
-            {dia.status === 'aberto' ? 'Em andamento' : 'Finalizado'}
-          </span>{' '}
-          {dia.formato && <span className="texto-auxiliar">formato {dia.formato}</span>}
+    <div className="flex flex-col w-full pb-20">
+      <Secao className="flex-row items-center justify-between pt-lg">
+        <div className="flex items-center gap-sm min-w-0">
+          <button
+            onClick={() => navigate('/dias-baba')}
+            className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface-variant/10 transition-colors"
+          >
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+          <div className="min-w-0">
+            <Titulo className="truncate">{new Date(`${dia.data}T00:00:00`).toLocaleDateString('pt-BR')}</Titulo>
+            <div className="flex items-center gap-xs mt-[2px]">
+              <Etiqueta tom={dia.status === 'aberto' ? 'amarelo' : 'neutro'}>
+                {dia.status === 'aberto' ? 'Em andamento' : 'Finalizado'}
+              </Etiqueta>
+              {dia.formato && <span className="text-label-sm text-on-surface-variant">formato {dia.formato}</span>}
+            </div>
+          </div>
         </div>
-        <button className="btn btn-secundario btn-pequeno" onClick={() => navigate('/dias-baba')}>
-          Voltar ao histórico
-        </button>
-      </div>
+      </Secao>
 
-      <Alerta tipo="erro">{erro}</Alerta>
+      <Secao>
+        <Alerta tipo="erro">{erro}</Alerta>
+      </Secao>
 
       {!temTimes && (
-        <div className="cartao">
-          <h2>Presentes ({dia.presentes.length})</h2>
-          <p className="texto-auxiliar">
-            {dia.presentes.map((p) => p.nome).join(', ') || 'Ninguém confirmado ainda.'}
-          </p>
+        <Secao>
+          <Cartao>
+            <h2 className="font-headline-md text-headline-md text-on-surface mb-xs">
+              Presentes ({dia.presentes.length})
+            </h2>
+            <p className="text-body-md text-on-surface-variant">
+              {dia.presentes.map((p) => p.nome).join(', ') || 'Ninguém confirmado ainda.'}
+            </p>
 
-          {editavel && (
-            <form onSubmit={sortear} className="placar-form" style={{ marginTop: '1rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                Formato:
-                <select value={formato} onChange={(e) => setFormato(e.target.value)}>
-                  <option value="4x4">4x4</option>
-                  <option value="5x5">5x5</option>
-                </select>
-              </label>
-              <button className="btn btn-primario" type="submit">
-                Sortear times
-              </button>
-            </form>
-          )}
-        </div>
+            {editavel && (
+              <form onSubmit={sortear} className="flex items-end gap-sm mt-md flex-wrap">
+                <label className="flex flex-col gap-xs">
+                  <span className="font-label-sm text-label-sm text-on-surface-variant ml-1">Formato</span>
+                  <select
+                    value={formato}
+                    onChange={(e) => setFormato(e.target.value)}
+                    className="h-12 px-md rounded-xl bg-surface-container text-on-surface font-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="4x4">4x4</option>
+                    <option value="5x5">5x5</option>
+                  </select>
+                </label>
+                <Botao variante="primario" type="submit">
+                  Sortear times
+                </Botao>
+              </form>
+            )}
+          </Cartao>
+        </Secao>
       )}
 
       {temTimes && !dia.baba_iniciado && (
         <>
-          <h2>Times sorteados</h2>
+          <Secao className="pb-0">
+            <h2 className="font-headline-md text-headline-md text-on-surface">Times sorteados</h2>
+          </Secao>
           <PainelGerenciarTimes dia={dia} editavel={editavel} token={token} diaId={id} onMudou={setDia} />
           {editavel && (
-            <div className="cartao" style={{ marginTop: '1rem' }}>
-              <p className="texto-auxiliar">
-                Preencha as vagas antes de começar, se houver. Depois de iniciar, os confrontos vão
-                se formando sozinhos: quem vence fica, quem perde (ou empata) volta pra fila.
-              </p>
-              <button className="btn btn-primario" onClick={iniciarBaba}>
-                Iniciar Baba
-              </button>
-            </div>
+            <Secao>
+              <Cartao>
+                <p className="text-body-md text-on-surface-variant mb-md">
+                  Preencha as vagas antes de começar, se houver. Depois de iniciar, os confrontos vão se
+                  formando sozinhos: quem vence fica, quem perde (ou empata) volta pra fila.
+                </p>
+                <Botao variante="primario" tamanho="grande" className="w-full" onClick={iniciarBaba}>
+                  <span className="material-symbols-outlined">play_arrow</span>
+                  Iniciar Baba
+                </Botao>
+              </Cartao>
+            </Secao>
           )}
         </>
       )}
@@ -152,25 +192,32 @@ export default function DiaBabaDetalhe() {
       {temTimes && dia.baba_iniciado && (
         <>
           {mensagemDesempate && (
-            <div className="cartao" style={{ borderColor: 'var(--cor-primaria)', marginBottom: '1rem' }}>
-              <strong>{mensagemDesempate}</strong>
-            </div>
+            <Secao>
+              <Cartao className="bg-tertiary-fixed/40 border-2 border-tertiary-fixed-dim flex items-center gap-sm">
+                <span className="material-symbols-outlined text-on-tertiary-fixed-variant">casino</span>
+                <strong className="text-body-md text-on-tertiary-fixed-variant">{mensagemDesempate}</strong>
+              </Cartao>
+            </Secao>
           )}
 
           {editavel && partidaReabrivel && (
-            <div className="cartao" style={{ marginBottom: '1rem' }}>
-              <p className="texto-auxiliar" style={{ margin: 0 }}>
-                A partida "{partidaReabrivel.time_a_nome} x {partidaReabrivel.time_b_nome}" acabou de
-                ser encerrada ({partidaReabrivel.gols_time_a} x {partidaReabrivel.gols_time_b}).
-              </p>
-              <button
-                className="btn btn-secundario btn-pequeno"
-                style={{ marginTop: '0.5rem' }}
-                onClick={() => reabrirPartida(partidaReabrivel.id)}
-              >
-                Desfazer encerramento
-              </button>
-            </div>
+            <Secao>
+              <Cartao className="border-2 border-outline-variant">
+                <p className="text-body-md text-on-surface-variant">
+                  A partida "{partidaReabrivel.time_a_nome} x {partidaReabrivel.time_b_nome}" acabou de ser
+                  encerrada ({partidaReabrivel.gols_time_a} x {partidaReabrivel.gols_time_b}).
+                </p>
+                <Botao
+                  variante="secundario"
+                  tamanho="pequeno"
+                  className="mt-sm"
+                  onClick={() => reabrirPartida(partidaReabrivel.id)}
+                >
+                  <span className="material-symbols-outlined text-[18px]">undo</span>
+                  Desfazer encerramento
+                </Botao>
+              </Cartao>
+            </Secao>
           )}
 
           {dia.partida_atual && !dia.partida_atual.iniciada && (
@@ -195,20 +242,28 @@ export default function DiaBabaDetalhe() {
           )}
 
           {dia.fila.length > 0 && (
-            <div className="cartao" style={{ marginTop: '1rem' }}>
-              <strong>Fila de espera:</strong>{' '}
-              <span className="texto-auxiliar">{dia.fila.map((f) => f.nome).join(' → ')}</span>
-            </div>
+            <Secao>
+              <Cartao className="flex items-center gap-sm overflow-x-auto no-scrollbar">
+                <span className="material-symbols-outlined text-on-surface-variant shrink-0">queue</span>
+                <div className="flex items-center gap-xs text-label-sm font-label-bold text-on-surface-variant whitespace-nowrap">
+                  {dia.fila.map((f, i) => (
+                    <span key={f.id} className="flex items-center gap-xs">
+                      {i > 0 && <span className="material-symbols-outlined text-[14px]">arrow_forward</span>}
+                      {f.nome}
+                    </span>
+                  ))}
+                </div>
+              </Cartao>
+            </Secao>
           )}
 
           {editavel && (
-            <button
-              className="btn btn-secundario btn-pequeno"
-              style={{ margin: '1rem 0' }}
-              onClick={() => setMostrarEditarTimes((v) => !v)}
-            >
-              {mostrarEditarTimes ? 'Fechar gerenciamento de times' : 'Gerenciar times'}
-            </button>
+            <Secao className="pb-0">
+              <Botao variante="secundario" tamanho="pequeno" onClick={() => setMostrarEditarTimes((v) => !v)}>
+                <span className="material-symbols-outlined text-[18px]">groups</span>
+                {mostrarEditarTimes ? 'Fechar gerenciamento de times' : 'Gerenciar times'}
+              </Botao>
+            </Secao>
           )}
           {mostrarEditarTimes && (
             <PainelGerenciarTimes dia={dia} editavel={editavel} token={token} diaId={id} onMudou={setDia} />
@@ -216,75 +271,309 @@ export default function DiaBabaDetalhe() {
 
           {dia.partidas_finalizadas.length > 0 && (
             <>
-              <h2>Partidas encerradas</h2>
-              {dia.partidas_finalizadas.map((p) => (
-                <div key={p.id} className="cartao cartao-partida">
-                  <div className="placar-form">
-                    <strong>{p.time_a_nome}</strong>
-                    <span>{p.gols_time_a}</span>
-                    <span>x</span>
-                    <span>{p.gols_time_b}</span>
-                    <strong>{p.time_b_nome}</strong>
-                  </div>
-                  {p.mensagem_desempate && <p className="texto-auxiliar">{p.mensagem_desempate}</p>}
-                  {p.eventos.length > 0 && (
-                    <ul className="lista-jogadores">
-                      {p.eventos.map((ev) => (
-                        <li key={ev.id}>
-                          <span>{ev.jogador} — {ev.tipo === 'gol' ? 'gol' : 'assistência'}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
+              <Secao className="pb-0">
+                <h2 className="font-headline-md text-headline-md text-on-surface">Partidas encerradas</h2>
+              </Secao>
+              <Secao className="gap-sm">
+                {dia.partidas_finalizadas.map((p) => (
+                  <Cartao key={p.id}>
+                    <div className="flex items-center justify-center gap-md text-body-md font-label-bold text-on-surface">
+                      <span className="truncate">{p.time_a_nome}</span>
+                      <span className="font-headline-md text-headline-md text-primary">
+                        {p.gols_time_a} x {p.gols_time_b}
+                      </span>
+                      <span className="truncate">{p.time_b_nome}</span>
+                    </div>
+                    {p.mensagem_desempate && (
+                      <p className="text-label-sm text-on-surface-variant text-center mt-xs">{p.mensagem_desempate}</p>
+                    )}
+                    {p.eventos.length > 0 && (
+                      <ul className="flex flex-col gap-[2px] mt-sm border-t border-outline-variant/30 pt-sm">
+                        {p.eventos.map((ev) => (
+                          <li key={ev.id} className="text-label-sm text-on-surface-variant flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px]">
+                              {ev.tipo === 'gol' ? 'sports_soccer' : 'ads_click'}
+                            </span>
+                            {ev.jogador} — {ev.tipo === 'gol' ? 'gol' : 'assistência'}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </Cartao>
+                ))}
+              </Secao>
             </>
           )}
 
-          <h2>Estatísticas do dia</h2>
-          {dia.estatisticas_do_dia.length === 0 ? (
-            <p className="texto-auxiliar">Ainda sem gols, assistências ou resultados registrados.</p>
-          ) : (
-            <table className="tabela">
-              <thead>
-                <tr>
-                  <th>Associado</th>
-                  <th>Gols</th>
-                  <th>Assistências</th>
-                  <th>Vitórias</th>
-                  <th>Pontuação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dia.estatisticas_do_dia.map((e) => (
-                  <tr key={e.associado_id}>
-                    <td>{e.apelido || e.nome}</td>
-                    <td>{e.gols}</td>
-                    <td>{e.assistencias}</td>
-                    <td>{e.vitorias}</td>
-                    <td>{e.pontuacao}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          <Secao className="pb-0">
+            <h2 className="font-headline-md text-headline-md text-on-surface">Estatísticas do dia</h2>
+          </Secao>
+          <Secao className="gap-sm">
+            {dia.estatisticas_do_dia.length === 0 ? (
+              <p className="text-body-md text-on-surface-variant">Ainda sem gols, assistências ou resultados registrados.</p>
+            ) : (
+              dia.estatisticas_do_dia.map((e) => (
+                <Cartao key={e.associado_id} className="flex items-center gap-md">
+                  <Avatar nome={e.apelido || e.nome} tamanho={40} tom="verde" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-label-bold text-on-surface truncate">{e.apelido || e.nome}</p>
+                    <p className="text-label-sm text-on-surface-variant">
+                      {e.gols}G · {e.assistencias}A · {e.vitorias}V
+                    </p>
+                  </div>
+                  <span className="font-headline-md text-headline-md text-primary shrink-0">{e.pontuacao} pts</span>
+                </Cartao>
+              ))
+            )}
+          </Secao>
 
           {editavel && (
-            <div className="cartao" style={{ marginTop: '1.5rem' }}>
-              <h2>Finalizar Dia de Baba</h2>
-              <p className="texto-auxiliar">
-                {dia.partida_atual?.iniciada
-                  ? 'Encerre a partida ao vivo para poder finalizar o Dia de Baba.'
-                  : 'Revise as partidas e estatísticas acima antes de finalizar. Depois de finalizado, nada aqui poderá ser alterado. Se houver um próximo confronto ainda não iniciado, ele será descartado.'}
-              </p>
-              <button className="btn btn-perigo" onClick={finalizar} disabled={!!dia.partida_atual?.iniciada}>
-                Finalizar Dia de Baba
-              </button>
-            </div>
+            <Secao>
+              <Cartao>
+                <h2 className="font-headline-md text-headline-md text-on-surface mb-xs">Finalizar Dia de Baba</h2>
+                <p className="text-body-md text-on-surface-variant mb-md">
+                  {dia.partida_atual?.iniciada
+                    ? 'Encerre a partida ao vivo para poder finalizar o Dia de Baba.'
+                    : 'Revise as partidas e estatísticas acima antes de finalizar. Depois de finalizado, nada aqui poderá ser alterado. Se houver um próximo confronto ainda não iniciado, ele será descartado.'}
+                </p>
+                <Botao
+                  variante="perigoCheio"
+                  className="w-full"
+                  onClick={finalizar}
+                  disabled={!!dia.partida_atual?.iniciada}
+                >
+                  Finalizar Dia de Baba
+                </Botao>
+              </Cartao>
+            </Secao>
           )}
         </>
       )}
     </div>
+  );
+}
+
+// ---------- Confronto pendente: gate antes de cada partida ----------
+function ConfrontoPendente({ dia, partida, editavel, onIniciar }) {
+  const timeA = dia.times.find((t) => t.id === partida.time_a_id);
+  const timeB = dia.times.find((t) => t.id === partida.time_b_id);
+  return (
+    <Secao>
+      <Cartao className="text-center py-lg">
+        <p className="font-label-bold text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">
+          Próximo confronto
+        </p>
+        <div className="flex items-center justify-center gap-md mb-lg">
+          <span className="font-headline-md text-headline-md text-on-surface">{timeA?.nome}</span>
+          <span className="font-label-bold text-on-surface-variant">x</span>
+          <span className="font-headline-md text-headline-md text-on-surface">{timeB?.nome}</span>
+        </div>
+        {editavel && (
+          <Botao variante="primario" tamanho="grande" className="w-full" onClick={onIniciar}>
+            <span className="material-symbols-outlined">play_arrow</span>
+            Iniciar partida
+          </Botao>
+        )}
+      </Cartao>
+    </Secao>
+  );
+}
+
+// ---------- Partida ao vivo: placar em destaque, elenco dos dois times, botão de gol ----------
+function PartidaAoVivo({ dia, partida, editavel, token, diaId, onMudou, onEncerrar }) {
+  const [golAberto, setGolAberto] = useState(false);
+  const [timeEscolhido, setTimeEscolhido] = useState('a'); // 'a' | 'b'
+  const [marcador, setMarcador] = useState(null); // participante escolhido
+  const [assistencia, setAssistencia] = useState(undefined); // participante | null ("não houve") | undefined (ainda não escolheu)
+  const [erroLocal, setErroLocal] = useState('');
+
+  const timeA = dia.times.find((t) => t.id === partida.time_a_id);
+  const timeB = dia.times.find((t) => t.id === partida.time_b_id);
+  const jogadoresTimeA = [...(timeA?.titulares || []), ...(timeA?.suplentes || [])];
+  const jogadoresTimeB = [...(timeB?.titulares || []), ...(timeB?.suplentes || [])];
+  const jogadoresDoTimeEscolhido = timeEscolhido === 'a' ? jogadoresTimeA : jogadoresTimeB;
+
+  function abrirGol() {
+    setGolAberto(true);
+    setTimeEscolhido('a');
+    setMarcador(null);
+    setAssistencia(undefined);
+    setErroLocal('');
+  }
+
+  function cancelarGol() {
+    setGolAberto(false);
+    setMarcador(null);
+    setAssistencia(undefined);
+  }
+
+  function escolherTime(lado) {
+    setTimeEscolhido(lado);
+    setMarcador(null);
+    setAssistencia(undefined);
+  }
+
+  async function confirmarGol() {
+    if (!marcador) return;
+    setErroLocal('');
+    try {
+      const assistenciaId = assistencia ? assistencia.id : null;
+      const resultado = await api.registrarGol(token, diaId, partida.id, marcador.id, assistenciaId);
+      onMudou(resultado);
+      cancelarGol();
+    } catch (err) {
+      setErroLocal(err.message);
+    }
+  }
+
+  async function removerEvento(eventoId) {
+    setErroLocal('');
+    try {
+      const resultado = await api.removerEvento(token, diaId, partida.id, eventoId);
+      onMudou(resultado);
+    } catch (err) {
+      setErroLocal(err.message);
+    }
+  }
+
+  return (
+    <Secao>
+      <Cartao className="p-0 overflow-hidden">
+        {/* placar em destaque */}
+        <div className="bg-primary text-on-primary px-md py-lg flex items-center justify-center gap-md">
+          <span className="font-label-bold text-label-sm text-center flex-1 truncate">{timeA?.nome}</span>
+          <span className="font-headline-lg text-headline-lg tabular-nums shrink-0">
+            {partida.gols_time_a} <span className="opacity-60 text-headline-md">x</span> {partida.gols_time_b}
+          </span>
+          <span className="font-label-bold text-label-sm text-center flex-1 truncate">{timeB?.nome}</span>
+        </div>
+
+        <div className="p-md flex flex-col gap-md">
+          <Alerta tipo="erro">{erroLocal}</Alerta>
+
+          {/* elenco dos dois times */}
+          <div className="grid grid-cols-2 gap-sm">
+            <div>
+              <p className="font-label-bold text-label-sm text-on-surface-variant mb-xs truncate">{timeA?.nome}</p>
+              <ul className="flex flex-col gap-[2px]">
+                {jogadoresTimeA.map((j) => (
+                  <li key={j.id} className="text-body-md text-on-surface truncate">
+                    {j.nome}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className="font-label-bold text-label-sm text-on-surface-variant mb-xs truncate">{timeB?.nome}</p>
+              <ul className="flex flex-col gap-[2px]">
+                {jogadoresTimeB.map((j) => (
+                  <li key={j.id} className="text-body-md text-on-surface truncate">
+                    {j.nome}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {!golAberto && editavel && (
+            <Botao variante="primario" tamanho="grande" className="w-full" onClick={abrirGol}>
+              <span className="material-symbols-outlined icon-filled">sports_soccer</span>
+              GOL
+            </Botao>
+          )}
+
+          {golAberto && (
+            <Cartao className="bg-surface-container border border-outline-variant/50 flex flex-col gap-sm">
+              <div className="flex gap-sm">
+                <Pilula selecionada={timeEscolhido === 'a'} onClick={() => escolherTime('a')} className="flex-1">
+                  {timeA?.nome}
+                </Pilula>
+                <Pilula selecionada={timeEscolhido === 'b'} onClick={() => escolherTime('b')} className="flex-1">
+                  {timeB?.nome}
+                </Pilula>
+              </div>
+
+              <p className="font-label-bold text-label-sm text-on-surface-variant">Quem fez o gol?</p>
+              <div className="flex flex-wrap gap-xs">
+                {jogadoresDoTimeEscolhido.map((j) => (
+                  <Pilula
+                    key={j.id}
+                    selecionada={marcador?.id === j.id}
+                    onClick={() => {
+                      setMarcador(j);
+                      setAssistencia(undefined);
+                    }}
+                  >
+                    {j.nome}
+                  </Pilula>
+                ))}
+              </div>
+
+              {marcador && (
+                <>
+                  <p className="font-label-bold text-label-sm text-on-surface-variant">Quem deu assistência?</p>
+                  <div className="flex flex-wrap gap-xs">
+                    {jogadoresDoTimeEscolhido
+                      .filter((j) => j.id !== marcador.id)
+                      .map((j) => (
+                        <Pilula key={j.id} selecionada={assistencia?.id === j.id} onClick={() => setAssistencia(j)}>
+                          {j.nome}
+                        </Pilula>
+                      ))}
+                    <Pilula selecionada={assistencia === null} onClick={() => setAssistencia(null)}>
+                      Não houve assistência
+                    </Pilula>
+                  </div>
+                </>
+              )}
+
+              <div className="flex gap-sm mt-sm">
+                <Botao variante="primario" disabled={!marcador || assistencia === undefined} onClick={confirmarGol} className="flex-1">
+                  Confirmar gol
+                </Botao>
+                <Botao variante="secundario" onClick={cancelarGol}>
+                  Cancelar
+                </Botao>
+              </div>
+            </Cartao>
+          )}
+
+          {partida.eventos.length > 0 && (
+            <div className="border-t border-outline-variant/30 pt-sm">
+              <p className="font-label-bold text-label-sm text-on-surface-variant mb-xs">Registrado nessa partida:</p>
+              <ul className="flex flex-col gap-xs">
+                {partida.eventos.map((ev) => (
+                  <li key={ev.id} className="flex items-center justify-between gap-sm">
+                    <span className="text-body-md text-on-surface flex items-center gap-1 min-w-0 truncate">
+                      <span className="material-symbols-outlined text-[16px] text-on-surface-variant shrink-0">
+                        {ev.tipo === 'gol' ? 'sports_soccer' : 'ads_click'}
+                      </span>
+                      <span className="truncate">
+                        {ev.jogador} — {ev.tipo === 'gol' ? 'gol' : 'assistência'}
+                      </span>
+                    </span>
+                    {editavel && (
+                      <button
+                        onClick={() => removerEvento(ev.id)}
+                        className="text-error text-label-sm font-label-bold shrink-0 px-2 py-1 rounded-lg hover:bg-error/10"
+                      >
+                        Desfazer
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {editavel && (
+            <Botao variante="perigoCheio" className="w-full" onClick={onEncerrar}>
+              Encerrar partida
+            </Botao>
+          )}
+        </div>
+      </Cartao>
+    </Secao>
   );
 }
 
@@ -404,35 +693,53 @@ function PainelGerenciarTimes({ dia, editavel, token, diaId, onMudou }) {
   }
 
   return (
-    <div>
-      <Alerta tipo="erro">{erroLocal}</Alerta>
+    <>
+      <Secao>
+        <Alerta tipo="erro">{erroLocal}</Alerta>
+      </Secao>
 
-      <div className="grade-times">
+      <Secao className="gap-sm">
         {dia.times.map((time) => (
-          <div key={time.id} className="cartao cartao-time">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <h3>{time.nome}</h3>
+          <Cartao key={time.id}>
+            <div className="flex items-center justify-between mb-sm">
+              <h3 className="font-headline-md text-headline-md text-on-surface">{time.nome}</h3>
               {editavel && (
-                <button className="btn btn-secundario btn-pequeno" onClick={() => apagarTime(time.id)}>
+                <button
+                  onClick={() => apagarTime(time.id)}
+                  className="text-error text-label-sm font-label-bold px-2 py-1 rounded-lg hover:bg-error/10"
+                >
                   Apagar time
                 </button>
               )}
             </div>
-            <ul className="lista-jogadores">
+
+            <ul className="flex flex-col gap-xs">
               {time.titulares.map((j) => (
-                <li key={j.id}>
-                  <span>{j.nome}</span>
+                <li key={j.id} className="flex items-center justify-between gap-sm">
+                  <span className="flex items-center gap-sm min-w-0">
+                    <Avatar nome={j.nome} tamanho={32} tom="neutro" />
+                    <span className="text-body-md text-on-surface truncate">{j.nome}</span>
+                  </span>
                   {editavel && (
-                    <button className="btn btn-secundario btn-pequeno" onClick={() => removerJogador(j.id)}>
-                      Remover
+                    <button
+                      onClick={() => removerJogador(j.id)}
+                      className="w-8 h-8 flex items-center justify-center rounded-full text-error hover:bg-error/10 shrink-0"
+                      title="Remover"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">person_remove</span>
                     </button>
                   )}
                 </li>
               ))}
 
               {Array.from({ length: time.vagas }).map((_, indice) => (
-                <li key={`vaga-${time.id}-${indice}`}>
-                  <span className="etiqueta-suplente">Vago</span>
+                <li key={`vaga-${time.id}-${indice}`} className="flex items-center justify-between gap-sm">
+                  <span className="flex items-center gap-sm min-w-0">
+                    <div className="w-8 h-8 rounded-full border-2 border-dashed border-outline-variant flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-[16px] text-outline">person_add</span>
+                    </div>
+                    <Etiqueta tom="neutro">Vago</Etiqueta>
+                  </span>
                   {editavel && (
                     <select
                       defaultValue=""
@@ -441,6 +748,7 @@ function PainelGerenciarTimes({ dia, editavel, token, diaId, onMudou }) {
                         preencherVaga(time, Number(e.target.value));
                         e.target.value = '';
                       }}
+                      className="h-9 px-2 rounded-lg bg-surface-container text-on-surface text-label-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                       <option value="">Escolher jogador...</option>
                       {candidatosParaVaga(time).map((c) => (
@@ -456,13 +764,21 @@ function PainelGerenciarTimes({ dia, editavel, token, diaId, onMudou }) {
 
             {time.suplentes.length > 0 && (
               <>
-                <div className="etiqueta-suplente">Suplentes emprestados:</div>
-                <ul className="lista-jogadores">
+                <div className="font-label-sm text-label-sm text-on-surface-variant mt-md mb-xs">
+                  Suplentes emprestados:
+                </div>
+                <ul className="flex flex-col gap-xs">
                   {time.suplentes.map((j) => (
-                    <li key={j.id}>
-                      <span>{j.nome}</span>
+                    <li key={j.id} className="flex items-center justify-between gap-sm">
+                      <span className="flex items-center gap-sm min-w-0">
+                        <Avatar nome={j.nome} tamanho={32} tom="cinza" />
+                        <span className="text-body-md text-on-surface truncate">{j.nome}</span>
+                      </span>
                       {editavel && (
-                        <button className="btn btn-secundario btn-pequeno" onClick={() => removerSuplencia(j.id)}>
+                        <button
+                          onClick={() => removerSuplencia(j.id)}
+                          className="text-label-sm font-label-bold text-on-surface-variant px-2 py-1 rounded-lg hover:bg-on-surface-variant/10 shrink-0"
+                        >
                           Remover
                         </button>
                       )}
@@ -471,310 +787,121 @@ function PainelGerenciarTimes({ dia, editavel, token, diaId, onMudou }) {
                 </ul>
               </>
             )}
-          </div>
+          </Cartao>
         ))}
-      </div>
+      </Secao>
 
       {editavel && (
-        <button className="btn btn-secundario btn-pequeno" style={{ marginTop: '0.5rem' }} onClick={criarTime}>
-          + Criar novo time
-        </button>
+        <Secao className="pt-0 pb-0">
+          <Botao variante="secundario" tamanho="pequeno" onClick={criarTime}>
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Criar novo time
+          </Botao>
+        </Secao>
       )}
 
       {editavel && (
-        <div className="grade-times" style={{ marginTop: '1rem' }}>
-          <form onSubmit={adicionarAssociado} className="cartao formulario">
-            <strong>+ Adicionar associado</strong>
-            <select value={associadoEscolhido} onChange={(e) => setAssociadoEscolhido(e.target.value)}>
-              <option value="">Escolher associado...</option>
-              {associadosDisponiveis.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.apelido || a.nome}
-                </option>
-              ))}
-            </select>
-            <select value={timeParaAssociado} onChange={(e) => setTimeParaAssociado(e.target.value)}>
-              <option value="">Sem time (decide depois)</option>
-              {dia.times.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.nome}
-                </option>
-              ))}
-            </select>
-            <button className="btn btn-primario btn-pequeno" type="submit">
-              Adicionar
-            </button>
-          </form>
-
-          <form onSubmit={adicionarConvidado} className="cartao formulario">
-            <strong>+ Adicionar visitante</strong>
-            <input
-              type="text"
-              placeholder="Nome do visitante"
-              value={nomeConvidado}
-              onChange={(e) => setNomeConvidado(e.target.value)}
-            />
-            <select value={timeParaConvidado} onChange={(e) => setTimeParaConvidado(e.target.value)}>
-              <option value="">Sem time (decide depois)</option>
-              {dia.times.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.nome}
-                </option>
-              ))}
-            </select>
-            <button className="btn btn-primario btn-pequeno" type="submit">
-              Adicionar
-            </button>
-          </form>
-        </div>
-      )}
-
-      <div className="cartao" style={{ marginTop: '1rem' }}>
-        <h3>Jogadores sem time</h3>
-        {dia.presentes_sem_time.length === 0 ? (
-          <p className="texto-auxiliar">Ninguém removido ou sem time no momento.</p>
-        ) : (
-          <ul className="lista-jogadores">
-            {dia.presentes_sem_time.map((j) => (
-              <li key={j.id}>
-                <span>{j.nome}</span>
-                {editavel && (
-                  <select
-                    defaultValue=""
-                    onChange={(e) => {
-                      if (!e.target.value) return;
-                      devolverJogador(j.id, Number(e.target.value));
-                      e.target.value = '';
-                    }}
-                  >
-                    <option value="">Colocar em...</option>
-                    {dia.times.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.nome}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ---------- Confronto pendente: gate antes de cada partida ----------
-function ConfrontoPendente({ dia, partida, editavel, onIniciar }) {
-  const timeA = dia.times.find((t) => t.id === partida.time_a_id);
-  const timeB = dia.times.find((t) => t.id === partida.time_b_id);
-  return (
-    <div className="cartao" style={{ textAlign: 'center' }}>
-      <h2>Próximo confronto</h2>
-      <div className="placar-destaque">
-        <strong>{timeA?.nome}</strong>
-        <span>x</span>
-        <strong>{timeB?.nome}</strong>
-      </div>
-      {editavel && (
-        <button className="btn btn-primario btn-gol" onClick={onIniciar}>
-          Iniciar partida
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ---------- Partida ao vivo: placar em destaque, elenco dos dois times, botão de gol ----------
-function PartidaAoVivo({ dia, partida, editavel, token, diaId, onMudou, onEncerrar }) {
-  const [golAberto, setGolAberto] = useState(false);
-  const [timeEscolhido, setTimeEscolhido] = useState('a'); // 'a' | 'b'
-  const [marcador, setMarcador] = useState(null); // participante escolhido
-  const [assistencia, setAssistencia] = useState(undefined); // participante | null ("não houve") | undefined (ainda não escolheu)
-  const [erroLocal, setErroLocal] = useState('');
-
-  const timeA = dia.times.find((t) => t.id === partida.time_a_id);
-  const timeB = dia.times.find((t) => t.id === partida.time_b_id);
-  const jogadoresTimeA = [...(timeA?.titulares || []), ...(timeA?.suplentes || [])];
-  const jogadoresTimeB = [...(timeB?.titulares || []), ...(timeB?.suplentes || [])];
-  const jogadoresDoTimeEscolhido = timeEscolhido === 'a' ? jogadoresTimeA : jogadoresTimeB;
-
-  function abrirGol() {
-    setGolAberto(true);
-    setTimeEscolhido('a');
-    setMarcador(null);
-    setAssistencia(undefined);
-    setErroLocal('');
-  }
-
-  function cancelarGol() {
-    setGolAberto(false);
-    setMarcador(null);
-    setAssistencia(undefined);
-  }
-
-  function escolherTime(lado) {
-    setTimeEscolhido(lado);
-    setMarcador(null);
-    setAssistencia(undefined);
-  }
-
-  async function confirmarGol() {
-    if (!marcador) return;
-    setErroLocal('');
-    try {
-      const assistenciaId = assistencia ? assistencia.id : null;
-      const resultado = await api.registrarGol(token, diaId, partida.id, marcador.id, assistenciaId);
-      onMudou(resultado);
-      cancelarGol();
-    } catch (err) {
-      setErroLocal(err.message);
-    }
-  }
-
-  async function removerEvento(eventoId) {
-    setErroLocal('');
-    try {
-      const resultado = await api.removerEvento(token, diaId, partida.id, eventoId);
-      onMudou(resultado);
-    } catch (err) {
-      setErroLocal(err.message);
-    }
-  }
-
-  return (
-    <div className="cartao">
-      <Alerta tipo="erro">{erroLocal}</Alerta>
-
-      <div className="placar-destaque">
-        <strong>{timeA?.nome}</strong>
-        <span className="placar-numero">{partida.gols_time_a}</span>
-        <span>x</span>
-        <span className="placar-numero">{partida.gols_time_b}</span>
-        <strong>{timeB?.nome}</strong>
-      </div>
-
-      <div className="grade-times">
-        <div className="cartao cartao-time">
-          <h3>{timeA?.nome}</h3>
-          <ul className="lista-jogadores-simples">
-            {jogadoresTimeA.map((j) => (
-              <li key={j.id}>{j.nome}</li>
-            ))}
-          </ul>
-        </div>
-        <div className="cartao cartao-time">
-          <h3>{timeB?.nome}</h3>
-          <ul className="lista-jogadores-simples">
-            {jogadoresTimeB.map((j) => (
-              <li key={j.id}>{j.nome}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {!golAberto && editavel && (
-        <button className="btn btn-primario btn-gol" onClick={abrirGol}>
-          GOL
-        </button>
-      )}
-
-      {golAberto && (
-        <div className="cartao painel-gol">
-          <div className="pilulas">
-            <button
-              className={`pilula ${timeEscolhido === 'a' ? 'pilula-selecionada' : ''}`}
-              onClick={() => escolherTime('a')}
-            >
-              {timeA?.nome}
-            </button>
-            <button
-              className={`pilula ${timeEscolhido === 'b' ? 'pilula-selecionada' : ''}`}
-              onClick={() => escolherTime('b')}
-            >
-              {timeB?.nome}
-            </button>
-          </div>
-
-          <strong>Quem fez o gol?</strong>
-          <div className="pilulas">
-            {jogadoresDoTimeEscolhido.map((j) => (
-              <button
-                key={j.id}
-                className={`pilula ${marcador?.id === j.id ? 'pilula-selecionada' : ''}`}
-                onClick={() => {
-                  setMarcador(j);
-                  setAssistencia(undefined);
-                }}
+        <Secao className="gap-sm">
+          <Cartao>
+            <form onSubmit={adicionarAssociado} className="flex flex-col gap-sm">
+              <strong className="font-label-bold text-on-surface">+ Adicionar associado</strong>
+              <select
+                value={associadoEscolhido}
+                onChange={(e) => setAssociadoEscolhido(e.target.value)}
+                className="h-11 px-md rounded-xl bg-surface-container text-on-surface font-body-md focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                {j.nome}
-              </button>
-            ))}
-          </div>
+                <option value="">Escolher associado...</option>
+                {associadosDisponiveis.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.apelido || a.nome}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={timeParaAssociado}
+                onChange={(e) => setTimeParaAssociado(e.target.value)}
+                className="h-11 px-md rounded-xl bg-surface-container text-on-surface font-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Sem time (decide depois)</option>
+                {dia.times.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nome}
+                  </option>
+                ))}
+              </select>
+              <Botao variante="primario" tamanho="pequeno" type="submit">
+                Adicionar
+              </Botao>
+            </form>
+          </Cartao>
 
-          {marcador && (
-            <>
-              <strong>Quem deu assistência?</strong>
-              <div className="pilulas">
-                {jogadoresDoTimeEscolhido
-                  .filter((j) => j.id !== marcador.id)
-                  .map((j) => (
-                    <button
-                      key={j.id}
-                      className={`pilula ${assistencia?.id === j.id ? 'pilula-selecionada' : ''}`}
-                      onClick={() => setAssistencia(j)}
+          <Cartao>
+            <form onSubmit={adicionarConvidado} className="flex flex-col gap-sm">
+              <strong className="font-label-bold text-on-surface">+ Adicionar visitante</strong>
+              <input
+                type="text"
+                placeholder="Nome do visitante"
+                value={nomeConvidado}
+                onChange={(e) => setNomeConvidado(e.target.value)}
+                className="h-11 px-md rounded-xl bg-surface-container text-on-surface font-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <select
+                value={timeParaConvidado}
+                onChange={(e) => setTimeParaConvidado(e.target.value)}
+                className="h-11 px-md rounded-xl bg-surface-container text-on-surface font-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Sem time (decide depois)</option>
+                {dia.times.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nome}
+                  </option>
+                ))}
+              </select>
+              <Botao variante="primario" tamanho="pequeno" type="submit">
+                Adicionar
+              </Botao>
+            </form>
+          </Cartao>
+        </Secao>
+      )}
+
+      <Secao>
+        <Cartao>
+          <h3 className="font-headline-md text-headline-md text-on-surface mb-sm">Jogadores sem time</h3>
+          {dia.presentes_sem_time.length === 0 ? (
+            <p className="text-body-md text-on-surface-variant">Ninguém removido ou sem time no momento.</p>
+          ) : (
+            <ul className="flex flex-col gap-xs">
+              {dia.presentes_sem_time.map((j) => (
+                <li key={j.id} className="flex items-center justify-between gap-sm">
+                  <span className="flex items-center gap-sm min-w-0">
+                    <Avatar nome={j.nome} tamanho={32} tom="neutro" />
+                    <span className="text-body-md text-on-surface truncate">{j.nome}</span>
+                  </span>
+                  {editavel && (
+                    <select
+                      defaultValue=""
+                      onChange={(e) => {
+                        if (!e.target.value) return;
+                        devolverJogador(j.id, Number(e.target.value));
+                        e.target.value = '';
+                      }}
+                      className="h-9 px-2 rounded-lg bg-surface-container text-on-surface text-label-sm focus:outline-none focus:ring-2 focus:ring-primary shrink-0"
                     >
-                      {j.nome}
-                    </button>
-                  ))}
-                <button
-                  className={`pilula ${assistencia === null ? 'pilula-selecionada' : ''}`}
-                  onClick={() => setAssistencia(null)}
-                >
-                  Não houve assistência
-                </button>
-              </div>
-            </>
+                      <option value="">Colocar em...</option>
+                      {dia.times.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.nome}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
-
-          <div className="acoes-formulario" style={{ marginTop: '1rem' }}>
-            <button
-              className="btn btn-primario"
-              disabled={!marcador || assistencia === undefined}
-              onClick={confirmarGol}
-            >
-              Confirmar gol
-            </button>
-            <button className="btn btn-secundario" onClick={cancelarGol}>
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {partida.eventos.length > 0 && (
-        <>
-          <strong>Registrado nessa partida:</strong>
-          <ul className="lista-jogadores">
-            {partida.eventos.map((ev) => (
-              <li key={ev.id}>
-                <span>{ev.jogador} — {ev.tipo === 'gol' ? 'gol' : 'assistência'}</span>
-                {editavel && (
-                  <button className="btn btn-secundario btn-pequeno" onClick={() => removerEvento(ev.id)}>
-                    Desfazer
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      {editavel && (
-        <button className="btn btn-perigo" style={{ marginTop: '1rem' }} onClick={onEncerrar}>
-          Encerrar partida
-        </button>
-      )}
-    </div>
+        </Cartao>
+      </Secao>
+    </>
   );
 }

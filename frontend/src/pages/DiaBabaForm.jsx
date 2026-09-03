@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
+import { Avatar, Botao, Campo, Cartao, Secao, Titulo } from '../components/ui.jsx';
 
 export default function DiaBabaForm() {
   const { token } = useAuth();
@@ -67,56 +68,77 @@ export default function DiaBabaForm() {
     }
   }
 
-  if (carregando) return <p className="pagina">Carregando...</p>;
+  if (carregando) return <p className="px-container-padding pt-md text-body-md text-on-surface-variant">Carregando...</p>;
 
   return (
-    <div className="pagina">
-      <h1>Novo Dia de Baba</h1>
+    <div className="flex flex-col w-full pb-20">
+      <Secao className="flex-row items-center gap-sm pt-lg">
+        <button
+          onClick={() => navigate('/dias-baba')}
+          className="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface-variant/10 transition-colors"
+        >
+          <span className="material-symbols-outlined">arrow_back</span>
+        </button>
+        <Titulo>Novo Dia de Baba</Titulo>
+      </Secao>
 
-      <form onSubmit={salvar} className="formulario cartao">
-        <label>
-          Data da partida
-          <input type="date" value={data} onChange={(e) => setData(e.target.value)} required />
-        </label>
+      <form onSubmit={salvar} className="flex flex-col gap-md">
+        <Secao className="pt-0">
+          <Campo label="Data da partida" icone="calendar_today" type="date" value={data} onChange={(e) => setData(e.target.value)} required />
+        </Secao>
 
-        <label>
-          Associados presentes ({selecionados.size} selecionado{selecionados.size === 1 ? '' : 's'})
-          <div className="checklist">
-            {associados.length === 0 && <p className="texto-auxiliar">Nenhum associado ativo cadastrado.</p>}
+        <Secao className="pt-0">
+          <span className="font-label-sm text-label-sm text-on-surface-variant ml-1">
+            Associados presentes ({selecionados.size} selecionado{selecionados.size === 1 ? '' : 's'})
+          </span>
+          <Cartao className="max-h-72 overflow-y-auto p-0 divide-y divide-outline-variant/30">
+            {associados.length === 0 && (
+              <p className="text-body-md text-on-surface-variant p-md">Nenhum associado ativo cadastrado.</p>
+            )}
             {associados.map((a) => (
-              <label key={a.id}>
+              <label
+                key={a.id}
+                className="flex items-center gap-md px-md py-sm cursor-pointer active:bg-surface-variant/30"
+              >
                 <input
                   type="checkbox"
                   checked={selecionados.has(a.id)}
                   onChange={() => alternar(a.id)}
+                  className="w-5 h-5 accent-primary shrink-0"
                 />
-                {a.apelido || a.nome}
+                <Avatar nome={a.apelido || a.nome} tamanho={36} tom={selecionados.has(a.id) ? 'verde' : 'neutro'} />
+                <span className="font-body-md text-on-surface truncate">{a.apelido || a.nome}</span>
               </label>
             ))}
-          </div>
-        </label>
+          </Cartao>
+        </Secao>
 
-        <label>
-          Convidados presentes (um nome por linha, opcional)
-          <textarea
+        <Secao className="pt-0">
+          <Campo
+            as="textarea"
+            label="Convidados presentes (um nome por linha, opcional)"
             rows={4}
             value={convidadosTexto}
             onChange={(e) => setConvidadosTexto(e.target.value)}
             placeholder={'Ex: João Vizinho\nMarcos do trabalho'}
+            className="resize-none"
           />
-        </label>
+        </Secao>
 
-        <Alerta tipo="erro">{erro}</Alerta>
+        <Secao className="pt-0">
+          <Alerta tipo="erro">{erro}</Alerta>
 
-        <div className="acoes-formulario">
-          <button className="btn btn-primario" type="submit" disabled={salvando}>
-            {salvando ? 'Criando...' : 'Criar Dia de Baba'}
-          </button>
-          <button className="btn btn-secundario" type="button" onClick={() => navigate('/dias-baba')}>
-            Cancelar
-          </button>
-        </div>
+          <div className="flex gap-sm">
+            <Botao variante="primario" type="submit" disabled={salvando} className="flex-1">
+              {salvando ? 'Criando...' : 'Criar Dia de Baba'}
+            </Botao>
+            <Botao variante="secundario" type="button" onClick={() => navigate('/dias-baba')}>
+              Cancelar
+            </Botao>
+          </div>
+        </Secao>
       </form>
     </div>
   );
 }
+

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
+import { Avatar, Botao, Campo, Cartao, Secao, Titulo } from '../components/ui.jsx';
 
 export default function Admins() {
   const { token } = useAuth();
@@ -49,67 +50,68 @@ export default function Admins() {
   }
 
   return (
-    <div className="pagina">
-      <h1>Administradores</h1>
+    <div className="flex flex-col w-full pb-20">
+      <Secao className="pt-lg">
+        <Titulo>Administradores</Titulo>
+      </Secao>
 
-      <div className="grade-duas-colunas">
-        <div>
-          <h2>Admins cadastrados</h2>
-          {carregando ? (
-            <p>Carregando...</p>
-          ) : (
-            <table className="tabela">
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Telefone</th>
-                  <th>Criado em</th>
-                </tr>
-              </thead>
-              <tbody>
-                {admins.map((a) => (
-                  <tr key={a.id}>
-                    <td>{a.nome}</td>
-                    <td>{a.telefone}</td>
-                    <td>{new Date(a.criado_em).toLocaleDateString('pt-BR')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+      <Secao>
+        <h2 className="font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">
+          Admins cadastrados
+        </h2>
+        {carregando ? (
+          <p className="text-body-md text-on-surface-variant">Carregando...</p>
+        ) : (
+          <div className="flex flex-col gap-sm">
+            {admins.map((a) => (
+              <Cartao key={a.id} className="flex items-center gap-md">
+                <Avatar nome={a.nome} tamanho={44} tom="cinza" />
+                <div className="flex flex-col min-w-0">
+                  <span className="font-label-bold text-on-surface truncate">{a.nome}</span>
+                  <span className="text-label-sm text-on-surface-variant">
+                    {a.telefone} · desde {new Date(a.criado_em).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+              </Cartao>
+            ))}
+          </div>
+        )}
+      </Secao>
 
-        <div>
-          <h2>Novo admin</h2>
-          <form onSubmit={criarAdmin} className="formulario cartao">
-            <label>
-              Nome
-              <input value={nome} onChange={(e) => setNome(e.target.value)} required />
-            </label>
-            <label>
-              Telefone
-              <input value={telefone} onChange={(e) => setTelefone(e.target.value)} required />
-            </label>
-            <label>
-              Senha (mínimo 6 caracteres)
-              <input
-                type="password"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                minLength={6}
-                required
-              />
-            </label>
+      <Secao>
+        <h2 className="font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">
+          Novo admin
+        </h2>
+        <Cartao>
+          <form onSubmit={criarAdmin} className="flex flex-col gap-md">
+            <Campo label="Nome" icone="person" value={nome} onChange={(e) => setNome(e.target.value)} required />
+            <Campo
+              label="Telefone"
+              icone="smartphone"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+              required
+            />
+            <Campo
+              label="Senha (mínimo 6 caracteres)"
+              icone="lock"
+              type="password"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              minLength={6}
+              required
+            />
 
             <Alerta tipo="erro">{erro}</Alerta>
             <Alerta tipo="sucesso">{sucesso}</Alerta>
 
-            <button className="btn btn-primario" type="submit" disabled={criando}>
+            <Botao variante="primario" type="submit" disabled={criando}>
               {criando ? 'Criando...' : 'Criar admin'}
-            </button>
+            </Botao>
           </form>
-        </div>
-      </div>
+        </Cartao>
+      </Secao>
     </div>
   );
 }
+
