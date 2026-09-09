@@ -1,57 +1,34 @@
 /** @type {import('tailwindcss').Config} */
+
+// Gera a função de cor no formato que o Tailwind precisa pra suportar opacidade
+// (ex: bg-primary/10) enquanto o valor em si vem de uma variável CSS — isso é
+// o que permite o modo escuro trocar as cores só mudando a classe .dark no
+// <html>, sem precisar duplicar "dark:" em cada componente.
+function corViaVariavel(nomeVariavel) {
+  return `rgb(var(${nomeVariavel}) / <alpha-value>)`;
+}
+
+const nomesDeCor = [
+  'on-tertiary-fixed', 'surface-container', 'tertiary-container', 'on-error-container',
+  'tertiary-fixed-dim', 'on-secondary-fixed-variant', 'on-secondary', 'on-secondary-container',
+  'surface-container-highest', 'on-primary-fixed-variant', 'on-tertiary', 'secondary-container',
+  'tertiary-fixed', 'on-background', 'on-primary-container', 'on-primary', 'primary-fixed',
+  'on-primary-fixed', 'surface-container-high', 'inverse-surface', 'outline', 'surface-container-low',
+  'inverse-on-surface', 'primary', 'on-error', 'secondary-fixed-dim', 'tertiary',
+  'surface-container-lowest', 'inverse-primary', 'background', 'secondary-fixed', 'on-tertiary-container',
+  'surface-bright', 'secondary', 'primary-container', 'surface-dim', 'surface-variant', 'error-container',
+  'on-tertiary-fixed-variant', 'on-secondary-fixed', 'primary-fixed-dim', 'surface', 'on-surface', 'error',
+  'outline-variant', 'on-surface-variant', 'surface-tint',
+];
+
+const colors = Object.fromEntries(nomesDeCor.map((nome) => [nome, corViaVariavel(`--color-${nome}`)]));
+
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
-      colors: {
-        'on-tertiary-fixed': '#1a1e00',
-        'surface-container': '#edeeed',
-        'tertiary-container': '#4c5500',
-        'on-error-container': '#93000a',
-        'tertiary-fixed-dim': '#bed100',
-        'on-secondary-fixed-variant': '#474746',
-        'on-secondary': '#ffffff',
-        'on-secondary-container': '#636262',
-        'surface-container-highest': '#e1e3e2',
-        'on-primary-fixed-variant': '#23501e',
-        'on-tertiary': '#ffffff',
-        'secondary-container': '#e2dfde',
-        'tertiary-fixed': '#d9ef00',
-        'on-background': '#191c1c',
-        'on-primary-container': '#9dd090',
-        'on-primary': '#ffffff',
-        'primary-fixed': '#bcf0ae',
-        'on-primary-fixed': '#002201',
-        'surface-container-high': '#e7e8e7',
-        'inverse-surface': '#2e3131',
-        outline: '#72796e',
-        'surface-container-low': '#f3f4f3',
-        'inverse-on-surface': '#f0f1f0',
-        primary: '#154212',
-        'on-error': '#ffffff',
-        'secondary-fixed-dim': '#c8c6c5',
-        tertiary: '#363d00',
-        'surface-container-lowest': '#ffffff',
-        'inverse-primary': '#a1d494',
-        background: '#f9f9f8',
-        'secondary-fixed': '#e5e2e1',
-        'on-tertiary-container': '#bacd00',
-        'surface-bright': '#f9f9f8',
-        secondary: '#5f5e5e',
-        'primary-container': '#2d5a27',
-        'surface-dim': '#d9dad9',
-        'surface-variant': '#e1e3e2',
-        'error-container': '#ffdad6',
-        'on-tertiary-fixed-variant': '#434b00',
-        'on-secondary-fixed': '#1c1b1b',
-        'primary-fixed-dim': '#a1d494',
-        surface: '#f9f9f8',
-        'on-surface': '#191c1c',
-        error: '#ba1a1a',
-        'outline-variant': '#c2c9bb',
-        'on-surface-variant': '#42493e',
-        'surface-tint': '#3b6934',
-      },
+      colors,
       borderRadius: {
         DEFAULT: '0.25rem',
         lg: '0.5rem',

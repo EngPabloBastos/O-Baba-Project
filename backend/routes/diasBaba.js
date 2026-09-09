@@ -100,8 +100,11 @@ function montarDetalhe(diaId) {
   const dia = buscarDia(diaId);
   if (!dia) return null;
 
-  const times = db.prepare('SELECT * FROM times_dia WHERE dia_baba_id = ? ORDER BY id').all(diaId);
-  const nomePorTime = new Map(times.map((t) => [t.id, t.nome]));
+  const times = db.prepare('SELECT * FROM times_dia WHERE dia_baba_id = ? AND ativo = 1 ORDER BY id').all(diaId);
+  // times dissolvidos continuam existindo (só saem da lista ativa), pra partidas
+  // antigas continuarem mostrando o nome certo no histórico
+  const todosOsTimesJaCriados = db.prepare('SELECT * FROM times_dia WHERE dia_baba_id = ? ORDER BY id').all(diaId);
+  const nomePorTime = new Map(todosOsTimesJaCriados.map((t) => [t.id, t.nome]));
 
   const escalacoes = db
     .prepare(
@@ -478,21 +481,26 @@ router.post('/:id/times', autenticar, somenteAdmin, (req, res) => {
   void novoId;
 });
 
-// DELETE /api/dias-baba/:id/times/:timeId -> apaga um time que ainda não jogou nenhuma partida
+// DELETE /api/dias-baba/:id/times/:timeId -> dissolve um time (jogadores viram "sem time")
+// Não apaga a linha do time de verdade: se ele já jogou alguma partida, precisa
+// continuar existindo pro histórico mostrar o nome certo. Só fica de fora da
+// lista de times ativos e sai da fila. Só é bloqueado se estiver jogando AGORA.
 router.delete('/:id/times/:timeId', autenticar, somenteAdmin, (req, res) => {
   const dia = exigirDia(req, res);
   if (!dia) return;
   if (!exigirAberto(dia, res)) return;
 
-  const time = db.prepare('SELECT * FROM times_dia WHERE id = ? AND dia_baba_id = ?').get(req.params.timeId, dia.id);
+  const time = db
+    .prepare('SELECT * FROM times_dia WHERE id = ? AND dia_baba_id = ? AND ativo = 1')
+    .get(req.params.timeId, dia.id);
   if (!time) return res.status(404).json({ erro: 'Time não encontrado.' });
 
-  const jaJogou = db
-    .prepare('SELECT COUNT(*) AS n FROM partidas WHERE dia_baba_id = ? AND (time_a_id = ? OR time_b_id = ?)')
-    .get(dia.id, time.id, time.id).n;
-  if (jaJogou > 0) {
+  const partidaAtual = db
+    .prepare('SELECT * FROM partidas WHERE dia_baba_id = ? AND encerrada = 0')
+    .get(dia.id);
+  if (partidaAtual && (partidaAtual.time_a_id === time.id || partidaAtual.time_b_id === time.id)) {
     return res.status(400).json({
-      erro: 'Esse time já entrou em alguma partida e não pode ser apagado (isso quebraria o histórico). Remova os jogadores dele um a um, se precisar esvaziá-lo.',
+      erro: 'Esse time está no confronto atual. Encerre (ou aguarde iniciar e encerrar) a partida antes de dissolvê-lo.',
     });
   }
 
@@ -504,8 +512,31 @@ router.delete('/:id/times/:timeId', autenticar, somenteAdmin, (req, res) => {
       'UPDATE escalacoes SET eh_suplente_para_time_id = NULL WHERE dia_baba_id = ? AND eh_suplente_para_time_id = ?'
     ).run(dia.id, time.id);
     db.prepare('DELETE FROM fila_times WHERE dia_baba_id = ? AND time_id = ?').run(dia.id, time.id);
-    db.prepare('DELETE FROM times_dia WHERE id = ?').run(time.id);
+    db.prepare('UPDATE times_dia SET ativo = 0 WHERE id = ?').run(time.id);
   })();
+
+  res.json(montarDetalhe(dia.id));
+});
+
+// PATCH /api/dias-baba/:id/fila -> reordena manualmente a fila de espera
+// body: { ordem: [time_id, time_id, ...] } — precisa ser exatamente o mesmo
+// conjunto de times que já está na fila, só em outra ordem.
+router.patch('/:id/fila', autenticar, somenteAdmin, (req, res) => {
+  const dia = exigirDia(req, res);
+  if (!dia) return;
+  if (!exigirAberto(dia, res)) return;
+
+  const { ordem } = req.body;
+  if (!Array.isArray(ordem)) return res.status(400).json({ erro: 'Informe a nova ordem da fila.' });
+
+  const atual = new Set(listaFila(dia.id).map((f) => f.time_id));
+  const novo = new Set(ordem);
+  const mesmoConjunto = atual.size === novo.size && [...atual].every((id) => novo.has(id));
+  if (!mesmoConjunto) {
+    return res.status(400).json({ erro: 'A nova ordem precisa ter exatamente os mesmos times que já estão na fila.' });
+  }
+
+  definirFila(dia.id, ordem);
 
   res.json(montarDetalhe(dia.id));
 });
@@ -518,7 +549,7 @@ router.post('/:id/iniciar-baba', autenticar, somenteAdmin, (req, res) => {
 
   if (dia.baba_iniciado) return res.status(400).json({ erro: 'O baba já foi iniciado.' });
 
-  const times = db.prepare('SELECT id FROM times_dia WHERE dia_baba_id = ? ORDER BY id').all(dia.id);
+  const times = db.prepare('SELECT id FROM times_dia WHERE dia_baba_id = ? AND ativo = 1 ORDER BY id').all(dia.id);
   if (times.length < 2) {
     return res.status(400).json({ erro: 'Sorteie ao menos 2 times antes de iniciar o baba.' });
   }

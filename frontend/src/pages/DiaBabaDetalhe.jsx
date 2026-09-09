@@ -93,6 +93,23 @@ export default function DiaBabaDetalhe() {
     acao(api.iniciarPartida(token, id, partidaId));
   }
 
+  async function moverNaFila(indiceAtual, novoIndice) {
+    if (!dia) return;
+    const nova = [...dia.fila.map((f) => f.time_id)];
+    const [removido] = nova.splice(indiceAtual, 1);
+    nova.splice(novoIndice, 0, removido);
+    acao(api.reordenarFila(token, id, nova));
+  }
+
+  async function sortearNovamente(e) {
+    e.preventDefault();
+    const confirmar = window.confirm(
+      'Sortear os times de novo? Isso apaga a organização atual (vagas e suplentes inclusive) e começa do zero com os presentes de agora.'
+    );
+    if (!confirmar) return;
+    acao(api.sortearTimes(token, id, formato));
+  }
+
   async function finalizar() {
     const confirmar = window.confirm(
       'Finalizar este Dia de Baba? Depois de finalizado, nada aqui poderá ser alterado.'
@@ -173,18 +190,40 @@ export default function DiaBabaDetalhe() {
           </Secao>
           <PainelGerenciarTimes dia={dia} editavel={editavel} token={token} diaId={id} onMudou={setDia} />
           {editavel && (
-            <Secao>
-              <Cartao>
-                <p className="text-body-md text-on-surface-variant mb-md">
-                  Preencha as vagas antes de começar, se houver. Depois de iniciar, os confrontos vão se
-                  formando sozinhos: quem vence fica, quem perde (ou empata) volta pra fila.
-                </p>
-                <Botao variante="primario" tamanho="grande" className="w-full" onClick={iniciarBaba}>
-                  <span className="material-symbols-outlined">play_arrow</span>
-                  Iniciar Baba
-                </Botao>
-              </Cartao>
-            </Secao>
+            <>
+              <Secao>
+                <Cartao>
+                  <p className="text-body-md text-on-surface-variant mb-md">
+                    Preencha as vagas antes de começar, se houver. Depois de iniciar, os confrontos vão se
+                    formando sozinhos: quem vence fica, quem perde (ou empata) volta pra fila.
+                  </p>
+                  <Botao variante="primario" tamanho="grande" className="w-full" onClick={iniciarBaba}>
+                    <span className="material-symbols-outlined">play_arrow</span>
+                    Iniciar Baba
+                  </Botao>
+                </Cartao>
+              </Secao>
+
+              <Secao className="pt-0">
+                <form onSubmit={sortearNovamente} className="flex items-end gap-sm flex-wrap">
+                  <label className="flex flex-col gap-xs">
+                    <span className="font-label-sm text-label-sm text-on-surface-variant ml-1">Formato</span>
+                    <select
+                      value={formato}
+                      onChange={(e) => setFormato(e.target.value)}
+                      className="h-12 px-md rounded-xl bg-surface-container text-on-surface font-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="4x4">4x4</option>
+                      <option value="5x5">5x5</option>
+                    </select>
+                  </label>
+                  <Botao variante="secundario" type="submit">
+                    <span className="material-symbols-outlined text-[18px]">casino</span>
+                    Sortear novamente
+                  </Botao>
+                </form>
+              </Secao>
+            </>
           )}
         </>
       )}
@@ -243,16 +282,41 @@ export default function DiaBabaDetalhe() {
 
           {dia.fila.length > 0 && (
             <Secao>
-              <Cartao className="flex items-center gap-sm overflow-x-auto no-scrollbar">
-                <span className="material-symbols-outlined text-on-surface-variant shrink-0">queue</span>
-                <div className="flex items-center gap-xs text-label-sm font-label-bold text-on-surface-variant whitespace-nowrap">
+              <Cartao>
+                <p className="font-label-bold text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[16px]">queue</span>
+                  Fila de espera
+                </p>
+                <ul className="flex flex-col gap-xs">
                   {dia.fila.map((f, i) => (
-                    <span key={f.id} className="flex items-center gap-xs">
-                      {i > 0 && <span className="material-symbols-outlined text-[14px]">arrow_forward</span>}
-                      {f.nome}
-                    </span>
+                    <li key={f.id} className="flex items-center justify-between gap-sm">
+                      <span className="text-body-md text-on-surface flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-label-sm font-label-bold text-on-surface-variant shrink-0">
+                          {i + 1}
+                        </span>
+                        {f.nome}
+                      </span>
+                      {editavel && (
+                        <div className="flex gap-1 shrink-0">
+                          <button
+                            disabled={i === 0}
+                            onClick={() => moverNaFila(i, i - 1)}
+                            className="w-8 h-8 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface-variant/10 disabled:opacity-30 disabled:pointer-events-none"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">arrow_upward</span>
+                          </button>
+                          <button
+                            disabled={i === dia.fila.length - 1}
+                            onClick={() => moverNaFila(i, i + 1)}
+                            className="w-8 h-8 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface-variant/10 disabled:opacity-30 disabled:pointer-events-none"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">arrow_downward</span>
+                          </button>
+                        </div>
+                      )}
+                    </li>
                   ))}
-                </div>
+                </ul>
               </Cartao>
             </Secao>
           )}

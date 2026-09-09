@@ -99,13 +99,23 @@ db.exec(`
 `);
 
 // Times sorteados dentro de um Dia de Baba (recriados a cada sorteio).
+// ativo=0 significa "dissolvido" (ex: todo mundo saiu) — a linha continua existindo
+// pra não quebrar o histórico de partidas antigas que já referenciam esse time,
+// só para de aparecer como opção pra jogar/receber gente nova.
 db.exec(`
   CREATE TABLE IF NOT EXISTS times_dia (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     dia_baba_id INTEGER NOT NULL REFERENCES dias_baba(id) ON DELETE CASCADE,
-    nome TEXT NOT NULL
+    nome TEXT NOT NULL,
+    ativo INTEGER NOT NULL DEFAULT 1
   );
 `);
+{
+  const colunasTime = db.prepare('PRAGMA table_info(times_dia)').all().map((c) => c.name);
+  if (!colunasTime.includes('ativo')) {
+    db.exec(`ALTER TABLE times_dia ADD COLUMN ativo INTEGER NOT NULL DEFAULT 1`);
+  }
+}
 
 // Escalação: cada jogador presente (associado OU convidado) e o time a que pertence
 // naquele Dia de Baba. eh_suplente_para_time_id: se preenchido, esse jogador,

@@ -60,10 +60,32 @@ function criarAdmin(req, res) {
   res.status(201).json(novoAdmin);
 }
 
-// GET /api/admins  -> lista todos os admins (só admin pode ver)
+// GET /api/admins  -> lista todos os admins (só admin pode ver), do mais antigo pro mais novo
 router.get('/', autenticar, somenteAdmin, (req, res) => {
-  const admins = db.prepare('SELECT id, nome, telefone, criado_em FROM admins').all();
+  const admins = db.prepare('SELECT id, nome, telefone, criado_em FROM admins ORDER BY id').all();
   res.json(admins);
+});
+
+// DELETE /api/admins/:id  -> exclui um admin (só admin pode, e nunca o primeiro admin criado)
+// Exige uma frase de confirmação fixa no corpo da requisição, como uma trava extra
+// contra clique acidental (não é uma senha de usuário, é a mesma para qualquer admin).
+router.delete('/:id', autenticar, somenteAdmin, (req, res) => {
+  const { senha_confirmacao } = req.body;
+  if (senha_confirmacao !== 'ragnarock') {
+    return res.status(401).json({ erro: 'Senha de confirmação incorreta.' });
+  }
+
+  const primeiroAdmin = db.prepare('SELECT id FROM admins ORDER BY id LIMIT 1').get();
+  if (primeiroAdmin && Number(req.params.id) === primeiroAdmin.id) {
+    return res.status(403).json({ erro: 'O primeiro admin criado não pode ser excluído.' });
+  }
+
+  const resultado = db.prepare('DELETE FROM admins WHERE id = ?').run(req.params.id);
+  if (resultado.changes === 0) {
+    return res.status(404).json({ erro: 'Admin não encontrado.' });
+  }
+
+  res.json({ mensagem: 'Admin excluído com sucesso.' });
 });
 
 module.exports = router;

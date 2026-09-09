@@ -3,12 +3,14 @@
 // tela autenticada. A tela de login não usa esse layout (é tela cheia).
 
 import { Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import logo from '../assets/logo.png';
 
 export default function Layout({ children }) {
   const { usuario, isAdmin, logout } = useAuth();
   const location = useLocation();
+  const [escuro, setEscuro] = useState(() => document.documentElement.classList.contains('dark'));
 
   const itensNav = [
     { path: '/', label: 'Início', icone: 'dashboard' },
@@ -20,6 +22,13 @@ export default function Layout({ children }) {
   function ativo(path) {
     if (path === '/') return location.pathname === '/';
     return location.pathname.startsWith(path);
+  }
+
+  function alternarTema() {
+    const ligar = !document.documentElement.classList.contains('dark');
+    document.documentElement.classList.toggle('dark', ligar);
+    localStorage.setItem('tema', ligar ? 'escuro' : 'claro');
+    setEscuro(ligar);
   }
 
   return (
@@ -37,6 +46,13 @@ export default function Layout({ children }) {
               <span className="text-label-sm font-label-bold text-on-surface truncate max-w-[120px]">{usuario?.nome}</span>
               <span className="text-label-sm text-on-surface-variant">{isAdmin ? 'Admin' : 'Associado'}</span>
             </div>
+            <button
+              onClick={alternarTema}
+              aria-label="Alternar tema claro/escuro"
+              className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary active:scale-95 transition-all"
+            >
+              <span className="material-symbols-outlined text-[20px]">{escuro ? 'light_mode' : 'dark_mode'}</span>
+            </button>
             <button
               onClick={logout}
               aria-label="Sair"

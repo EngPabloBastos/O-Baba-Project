@@ -49,6 +49,24 @@ export default function Admins() {
     }
   }
 
+  async function excluirAdmin(admin) {
+    const senha = window.prompt(
+      `Pra excluir "${admin.nome}", digite a senha de confirmação:`
+    );
+    if (senha === null) return; // cancelou
+    setErro('');
+    setSucesso('');
+    try {
+      await api.excluirAdmin(token, admin.id, senha);
+      setSucesso('Admin excluído com sucesso.');
+      carregar();
+    } catch (err) {
+      setErro(err.message);
+    }
+  }
+
+  const primeiroAdminId = admins[0]?.id;
+
   return (
     <div className="flex flex-col w-full pb-20">
       <Secao className="pt-lg">
@@ -66,12 +84,21 @@ export default function Admins() {
             {admins.map((a) => (
               <Cartao key={a.id} className="flex items-center gap-md">
                 <Avatar nome={a.nome} tamanho={44} tom="cinza" />
-                <div className="flex flex-col min-w-0">
+                <div className="flex flex-col min-w-0 flex-1">
                   <span className="font-label-bold text-on-surface truncate">{a.nome}</span>
                   <span className="text-label-sm text-on-surface-variant">
                     {a.telefone} · desde {new Date(a.criado_em).toLocaleDateString('pt-BR')}
                   </span>
                 </div>
+                {a.id !== primeiroAdminId && (
+                  <button
+                    onClick={() => excluirAdmin(a)}
+                    title="Excluir admin"
+                    className="w-9 h-9 flex items-center justify-center rounded-full text-error hover:bg-error/10 transition-colors shrink-0"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">delete</span>
+                  </button>
+                )}
               </Cartao>
             ))}
           </div>

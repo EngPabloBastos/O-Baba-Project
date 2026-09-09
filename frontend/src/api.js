@@ -42,6 +42,8 @@ export const api = {
   criarAdmin: (token, nome, telefone, senha) =>
     request('/api/admins', { method: 'POST', body: { nome, telefone, senha }, token }),
   listarAdmins: (token) => request('/api/admins', { token }),
+  excluirAdmin: (token, id, senhaConfirmacao) =>
+    request(`/api/admins/${id}`, { method: 'DELETE', body: { senha_confirmacao: senhaConfirmacao }, token }),
 
   // ---- associados ----
   listarAssociados: (token, ativo) => {
@@ -107,6 +109,8 @@ export const api = {
   criarTime: (token, id) => request(`/api/dias-baba/${id}/times`, { method: 'POST', token }),
   apagarTime: (token, id, timeId) =>
     request(`/api/dias-baba/${id}/times/${timeId}`, { method: 'DELETE', token }),
+  reordenarFila: (token, id, ordem) =>
+    request(`/api/dias-baba/${id}/fila`, { method: 'PATCH', body: { ordem }, token }),
   iniciarBaba: (token, id) =>
     request(`/api/dias-baba/${id}/iniciar-baba`, { method: 'POST', token }),
   iniciarPartida: (token, id, partidaId) =>

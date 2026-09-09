@@ -2,6 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Valores de cada cor do design system, em "R G B" (sem vírgula, é o formato
+   que o Tailwind espera pra poder aplicar opacidade tipo bg-primary/10).
+   O modo escuro troca TODAS as cores de uma vez só adicionando a classe
+   "dark" no <html> — nenhum componente precisa saber que o tema mudou. */
+:root {
+  --color-on-tertiary-fixed: 26 30 0;
+  --color-surface-container: 237 238 237;
+  --color-tertiary-container: 76 85 0;
+  --color-on-error-container: 147 0 10;
+  --color-tertiary-fixed-dim: 190 209 0;
+  --color-on-secondary-fixed-variant: 71 71 70;
+  --color-on-secondary: 255 255 255;
+  --color-on-secondary-container: 99 98 98;
+  --color-surface-container-highest: 225 227 226;
+  --color-on-primary-fixed-variant: 35 80 30;
+  --color-on-tertiary: 255 255 255;
+  --color-secondary-container: 226 223 222;
+  --color-tertiary-fixed: 217 239 0;
+  --color-on-background: 25 28 28;
+  --color-on-primary-container: 157 208 144;
+  --color-on-primary: 255 255 255;
+  --color-primary-fixed: 188 240 174;
+  --color-on-primary-fixed: 0 34 1;
+  --color-surface-container-high: 231 232 231;
+  --color-inverse-surface: 46 49 49;
+  --color-outline: 114 121 110;
+  --color-surface-container-low: 243 244 243;
+  --color-inverse-on-surface: 240 241 240;
+  --color-primary: 21 66 18;
+  --color-on-error: 255 255 255;
+  --color-secondary-fixed-dim: 200 198 197;
+  --color-tertiary: 54 61 0;
+  --color-surface-container-lowest: 255 255 255;
+  --color-inverse-primary: 161 212 148;
+  --color-background: 249 249 248;
+  --color-secondary-fixed: 229 226 225;
+  --color-on-tertiary-container: 186 205 0;
+  --color-surface-bright: 249 249 248;
+  --color-secondary: 95 94 94;
+  --color-primary-container: 45 90 39;
+  --color-surface-dim: 217 218 217;
+  --color-surface-variant: 225 227 226;
+  --color-error-container: 255 218 214;
+  --color-on-tertiary-fixed-variant: 67 75 0;
+  --color-on-secondary-fixed: 28 27 27;
+  --color-primary-fixed-dim: 161 212 148;
+  --color-surface: 249 249 248;
+  --color-on-surface: 25 28 28;
+  --color-error: 186 26 26;
+  --color-outline-variant: 194 201 187;
+  --color-on-surface-variant: 66 73 62;
+  --color-surface-tint: 59 105 52;
+}
+
+.dark {
+  --color-background: 16 19 15;
+  --color-on-background: 226 227 221;
+  --color-surface: 16 19 15;
+  --color-on-surface: 226 227 221;
+  --color-surface-dim: 16 19 15;
+  --color-surface-bright: 54 58 51;
+  --color-surface-container-lowest: 11 14 10;
+  --color-surface-container-low: 25 28 23;
+  --color-surface-container: 29 32 27;
+  --color-surface-container-high: 39 42 37;
+  --color-surface-container-highest: 50 53 48;
+  --color-surface-variant: 66 73 62;
+  --color-on-surface-variant: 194 201 187;
+  --color-outline: 140 147 136;
+  --color-outline-variant: 66 73 62;
+  --color-inverse-surface: 226 227 221;
+  --color-inverse-on-surface: 46 49 49;
+  --color-inverse-primary: 21 66 18;
+  --color-surface-tint: 134 216 121;
+  --color-primary: 134 216 121;
+  --color-on-primary: 10 57 7;
+  --color-primary-container: 35 80 30;
+  --color-on-primary-container: 161 212 148;
+  --color-primary-fixed: 188 240 174;
+  --color-on-primary-fixed: 0 34 1;
+  --color-primary-fixed-dim: 161 212 148;
+  --color-on-primary-fixed-variant: 35 80 30;
+  --color-secondary: 200 198 192;
+  --color-on-secondary: 47 49 44;
+  --color-secondary-container: 69 71 65;
+  --color-on-secondary-container: 229 226 225;
+  --color-secondary-fixed: 229 226 225;
+  --color-on-secondary-fixed: 28 27 27;
+  --color-secondary-fixed-dim: 200 198 197;
+  --color-on-secondary-fixed-variant: 71 71 70;
+  --color-tertiary: 195 214 79;
+  --color-on-tertiary: 47 51 0;
+  --color-tertiary-container: 67 75 0;
+  --color-on-tertiary-container: 223 239 143;
+  --color-tertiary-fixed: 217 239 0;
+  --color-on-tertiary-fixed: 26 30 0;
+  --color-tertiary-fixed-dim: 190 209 0;
+  --color-on-tertiary-fixed-variant: 67 75 0;
+  --color-error: 255 180 171;
+  --color-on-error: 105 0 5;
+  --color-error-container: 147 0 10;
+  --color-on-error-container: 255 218 214;
+}
+
 @layer base {
   body {
     -webkit-tap-highlight-color: transparent;
