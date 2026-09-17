@@ -1,7 +1,5 @@
 // routes/associados.js
-// Cadastro e gerenciamento de associados. Só admins podem criar/editar/desativar/
-// alterar status de pagamento. Associados logados podem ver a própria ficha e a
-// lista de outros (dados públicos), mas nunca alterar nada.
+// Cadastro de associados. Só admin cria/edita; associado vê a própria ficha.
 
 const express = require('express');
 const bcrypt = require('bcryptjs');
@@ -14,9 +12,7 @@ const router = express.Router();
 // Nunca devolvemos senha_hash em nenhuma rota.
 const CAMPOS_PUBLICOS = 'id, nome, apelido, telefone, status_pagamento, ativo, criado_em';
 
-// Sempre que a lista de associados é acessada, garante que o reset mensal
-// automático de status_pagamento já foi aplicado (cobre o caso do servidor
-// ter ficado desligado durante a virada do mês).
+// reset mensal do status de pagamento
 router.use((req, res, next) => {
   db.garantirStatusPagamentoAtualizado();
   next();
@@ -121,9 +117,7 @@ router.patch('/me/senha', autenticar, (req, res) => {
   res.json({ mensagem: 'Senha alterada com sucesso.' });
 });
 
-// PUT /api/associados/:id  -> editar dados (somente admin)
-// Não altera status_pagamento aqui de propósito: isso tem rota própria (PATCH /:id/pagamento)
-// para deixar claro no histórico/permissões que é uma ação distinta.
+// PUT /api/associados/:id  -> editar dados (status de pagamento tem rota própria)
 router.put('/:id', autenticar, somenteAdmin, (req, res) => {
   const associado = db.prepare('SELECT * FROM associados WHERE id = ?').get(req.params.id);
   if (!associado) {

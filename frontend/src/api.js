@@ -1,11 +1,7 @@
 // src/api.js
-// Um único lugar que sabe conversar com o backend.
-// Toda a tela usa essa função em vez de chamar fetch() espalhado pelo código.
+// Ponto único de conversa com o backend.
 
-// Em produção (deploy junto com o backend), VITE_API_URL fica vazio de propósito:
-// como os dois rodam na mesma origem, "" + "/api/..." já forma a URL certa,
-// sem precisar saber o domínio de antemão. Por isso usamos "??" (não "||") —
-// uma string vazia definida de propósito não deve cair no valor padrão de dev.
+// Vazio em produção (mesma origem do backend); ?? mantém isso mesmo sendo string vazia
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 async function request(path, { method = 'GET', body, token } = {}) {
@@ -115,10 +111,10 @@ export const api = {
     request(`/api/dias-baba/${id}/iniciar-baba`, { method: 'POST', token }),
   iniciarPartida: (token, id, partidaId) =>
     request(`/api/dias-baba/${id}/partidas/${partidaId}/iniciar`, { method: 'PATCH', token }),
-  registrarGol: (token, id, partidaId, escalacaoId, assistenciaEscalacaoId) =>
+  registrarGol: (token, id, partidaId, escalacaoId, assistenciaEscalacaoId, contra) =>
     request(`/api/dias-baba/${id}/partidas/${partidaId}/gol`, {
       method: 'POST',
-      body: { escalacao_id: escalacaoId, assistencia_escalacao_id: assistenciaEscalacaoId ?? null },
+      body: { escalacao_id: escalacaoId, assistencia_escalacao_id: assistenciaEscalacaoId ?? null, contra: !!contra },
       token,
     }),
   removerEvento: (token, id, partidaId, eventoId) =>

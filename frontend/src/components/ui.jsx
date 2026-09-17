@@ -1,7 +1,5 @@
 // src/components/ui.jsx
-// Peças pequenas e reutilizáveis, seguindo o design system do Stitch
-// (cores, tipografia e espaçamentos definidos no tailwind.config.js).
-// Usadas em todas as páginas pra manter a aparência consistente.
+// Peças reutilizáveis (botão, campo, cartão, etiqueta) usadas em todas as telas.
 
 export function Botao({ variante = 'primario', tamanho = 'normal', className = '', children, ...props }) {
   const base =

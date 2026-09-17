@@ -188,15 +188,33 @@ db.exec(`
 
 // Gols/assistências individuais dentro de uma partida. quantidade permite lançar
 // "2 gols do fulano nessa partida" numa linha só, evitando duplicar registros.
+// "gol_contra" marca no placar do adversário, mas nunca soma na estatística do jogador.
 db.exec(`
   CREATE TABLE IF NOT EXISTS eventos_partida (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     partida_id INTEGER NOT NULL REFERENCES partidas(id) ON DELETE CASCADE,
     escalacao_id INTEGER NOT NULL REFERENCES escalacoes(id) ON DELETE CASCADE,
-    tipo TEXT NOT NULL CHECK (tipo IN ('gol', 'assistencia')),
+    tipo TEXT NOT NULL CHECK (tipo IN ('gol', 'assistencia', 'gol_contra')),
     quantidade INTEGER NOT NULL DEFAULT 1
   );
 `);
+{
+  const definicaoAtual = db.prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'eventos_partida'`).get();
+  if (definicaoAtual && !definicaoAtual.sql.includes('gol_contra')) {
+    db.exec(`
+      ALTER TABLE eventos_partida RENAME TO eventos_partida_antiga;
+      CREATE TABLE eventos_partida (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        partida_id INTEGER NOT NULL REFERENCES partidas(id) ON DELETE CASCADE,
+        escalacao_id INTEGER NOT NULL REFERENCES escalacoes(id) ON DELETE CASCADE,
+        tipo TEXT NOT NULL CHECK (tipo IN ('gol', 'assistencia', 'gol_contra')),
+        quantidade INTEGER NOT NULL DEFAULT 1
+      );
+      INSERT INTO eventos_partida SELECT * FROM eventos_partida_antiga;
+      DROP TABLE eventos_partida_antiga;
+    `);
+  }
+}
 
 // ---------- Reinício mensal do status de pagamento ----------
 // No dia 1 de cada mês (primeira vez que o servidor checa depois disso),

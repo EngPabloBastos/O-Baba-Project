@@ -1,6 +1,5 @@
 // src/pages/Associados.jsx
-// Lista todos os associados, com filtro de ativos/inativos e busca por nome.
-// Cada cartão tem ações rápidas: ver/editar, marcar pagamento, desativar/reativar, excluir.
+// Lista de associados, com busca e ações rápidas.
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';

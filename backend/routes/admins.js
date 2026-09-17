@@ -1,10 +1,6 @@
 // routes/admins.js
 // Gerenciamento de administradores.
-//
-// Regra especial de "bootstrap": se ainda NÃO existe nenhum admin no banco,
-// a rota de criação fica aberta (sem precisar de token) só para você criar
-// o primeiro admin. Depois que já existe pelo menos 1 admin, criar novos
-// admins passa a exigir estar logado como admin.
+// Se ainda não existe nenhum admin, a criação fica aberta (bootstrap).
 
 const express = require('express');
 const bcrypt = require('bcryptjs');
@@ -20,11 +16,9 @@ function existeAlgumAdmin() {
 
 // POST /api/admins
 router.post('/', (req, res, next) => {
-  // Se já existe algum admin, exige autenticação de admin antes de continuar.
   if (existeAlgumAdmin()) {
     return autenticar(req, res, () => somenteAdmin(req, res, () => criarAdmin(req, res)));
   }
-  // Se não existe nenhum admin ainda, deixa passar livremente (bootstrap inicial).
   return criarAdmin(req, res);
 });
 
@@ -38,8 +32,7 @@ function criarAdmin(req, res) {
     return res.status(400).json({ erro: 'A senha precisa ter pelo menos 6 caracteres.' });
   }
 
-  // Remove espaços acidentais (ex: copiar/colar) para telefone de login e cadastro
-  // sempre baterem exatamente.
+  // remove espaço acidental de copiar/colar
   const telefoneLimpo = telefone.trim();
 
   const jaExiste = db.prepare('SELECT id FROM admins WHERE telefone = ?').get(telefoneLimpo);
@@ -60,15 +53,13 @@ function criarAdmin(req, res) {
   res.status(201).json(novoAdmin);
 }
 
-// GET /api/admins  -> lista todos os admins (só admin pode ver), do mais antigo pro mais novo
+// GET /api/admins
 router.get('/', autenticar, somenteAdmin, (req, res) => {
   const admins = db.prepare('SELECT id, nome, telefone, criado_em FROM admins ORDER BY id').all();
   res.json(admins);
 });
 
-// DELETE /api/admins/:id  -> exclui um admin (só admin pode, e nunca o primeiro admin criado)
-// Exige uma frase de confirmação fixa no corpo da requisição, como uma trava extra
-// contra clique acidental (não é uma senha de usuário, é a mesma para qualquer admin).
+// DELETE /api/admins/:id  -> exige a frase de confirmação; nunca apaga o primeiro admin
 router.delete('/:id', autenticar, somenteAdmin, (req, res) => {
   const { senha_confirmacao } = req.body;
   if (senha_confirmacao !== 'ragnarock') {

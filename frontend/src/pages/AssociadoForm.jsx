@@ -1,8 +1,5 @@
 // src/pages/AssociadoForm.jsx
-// Uma página só, usada tanto para CRIAR (rota /associados/novo)
-// quanto para EDITAR (rota /associados/:id) um associado.
-// O status de pagamento não é editado aqui: ele tem sua ação própria na lista
-// de associados, para deixar claro que é uma ação separada do cadastro.
+// Criação e edição de associado (status de pagamento fica numa ação própria).
 
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';

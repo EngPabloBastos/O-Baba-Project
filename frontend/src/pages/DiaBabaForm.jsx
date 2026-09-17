@@ -1,7 +1,5 @@
 // src/pages/DiaBabaForm.jsx
-// Criação de um novo Dia de Baba: data, associados presentes (checklist) e
-// convidados presentes (um nome por linha). O sorteio dos times acontece
-// depois, na tela de detalhe, para o admin poder revisar a lista de presentes antes.
+// Criação de um novo Dia de Baba: data, presentes e convidados.
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';

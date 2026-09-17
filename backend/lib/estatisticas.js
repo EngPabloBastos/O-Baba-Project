@@ -1,14 +1,7 @@
 // lib/estatisticas.js
-// Cálculo centralizado das estatísticas de cada associado, usado tanto pela
-// revisão de um Dia de Baba (antes de finalizar) quanto pela seção "Desempenhos"
-// (rankings mensais/anuais). Fica num só lugar para não duplicar essa lógica
-// e para garantir que o número mostrado é sempre o mesmo em qualquer tela.
-//
-// Vitórias NUNCA são lançadas manualmente: são derivadas aqui, comparando o
-// placar de cada partida com quem jogou por cada time (titular ou suplente).
-// Convidados podem marcar gol/assistência (entram no placar da partida), mas
-// não entram nos rankings/estatísticas de associados, conforme o requisito
-// original ("estatísticas dos associados").
+// Cálculo das estatísticas de cada associado (gols, assistências, vitórias,
+// pontuação), usado tanto na revisão de um Dia de Baba quanto nos rankings.
+// Vitórias nunca são lançadas manualmente: são derivadas do placar aqui.
 
 const db = require('../db');
 

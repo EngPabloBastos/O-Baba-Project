@@ -7,6 +7,7 @@ import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
 import { Botao, Campo } from '../components/ui.jsx';
+import IconesRedes from '../components/IconesRedes.jsx';
 import logo from '../assets/logo.png';
 
 export default function Login() {
@@ -60,9 +61,6 @@ export default function Login() {
           <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-background text-center tracking-tight">
             Baba Manager
           </h1>
-          <p className="font-body-md text-body-md text-on-surface-variant text-center mt-xs">
-            Seu clube, sua gestão.
-          </p>
         </div>
 
         <div className="bg-surface-container rounded-[24px] p-container-padding shadow-sm relative overflow-hidden">
@@ -140,6 +138,11 @@ export default function Login() {
               <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
             </Botao>
           </form>
+        </div>
+
+        <div className="mt-xl flex flex-col items-center gap-sm">
+          <span className="text-label-sm text-on-surface-variant">Desenvolvido por Pablo Bastos</span>
+          <IconesRedes />
         </div>
       </div>
     </div>

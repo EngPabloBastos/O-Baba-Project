@@ -1,6 +1,5 @@
 // src/pages/DiaBabaDetalhe.jsx
-// Tela central de um Dia de Baba: sorteio, organização dos times (com vagas),
-// "Iniciar Baba" e a partida ao vivo (fila "vencedor fica" + gols em tempo real).
+// Sorteio, organização dos times, "Iniciar Baba" e a partida ao vivo.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -352,16 +351,42 @@ export default function DiaBabaDetalhe() {
                       <p className="text-label-sm text-on-surface-variant text-center mt-xs">{p.mensagem_desempate}</p>
                     )}
                     {p.eventos.length > 0 && (
-                      <ul className="flex flex-col gap-[2px] mt-sm border-t border-outline-variant/30 pt-sm">
-                        {p.eventos.map((ev) => (
-                          <li key={ev.id} className="text-label-sm text-on-surface-variant flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[14px]">
-                              {ev.tipo === 'gol' ? 'sports_soccer' : 'ads_click'}
-                            </span>
-                            {ev.jogador} — {ev.tipo === 'gol' ? 'gol' : 'assistência'}
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="grid grid-cols-2 gap-sm mt-sm border-t border-outline-variant/30 pt-sm">
+                        <ul className="flex flex-col gap-[2px]">
+                          {p.eventos
+                            .filter((ev) => ev.lado === 'a')
+                            .map((ev) => (
+                              <li
+                                key={ev.id}
+                                className={`text-label-sm flex items-center gap-1 ${
+                                  ev.tipo === 'gol_contra' ? 'text-error' : 'text-on-surface-variant'
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-[14px]">
+                                  {ev.tipo === 'assistencia' ? 'ads_click' : 'sports_soccer'}
+                                </span>
+                                {ev.jogador} — {ev.tipo === 'gol' ? 'gol' : ev.tipo === 'gol_contra' ? 'gol contra' : 'assistência'}
+                              </li>
+                            ))}
+                        </ul>
+                        <ul className="flex flex-col gap-[2px]">
+                          {p.eventos
+                            .filter((ev) => ev.lado === 'b')
+                            .map((ev) => (
+                              <li
+                                key={ev.id}
+                                className={`text-label-sm flex items-center gap-1 ${
+                                  ev.tipo === 'gol_contra' ? 'text-error' : 'text-on-surface-variant'
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-[14px]">
+                                  {ev.tipo === 'assistencia' ? 'ads_click' : 'sports_soccer'}
+                                </span>
+                                {ev.jogador} — {ev.tipo === 'gol' ? 'gol' : ev.tipo === 'gol_contra' ? 'gol contra' : 'assistência'}
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
                     )}
                   </Cartao>
                 ))}
@@ -449,6 +474,7 @@ function PartidaAoVivo({ dia, partida, editavel, token, diaId, onMudou, onEncerr
   const [timeEscolhido, setTimeEscolhido] = useState('a'); // 'a' | 'b'
   const [marcador, setMarcador] = useState(null); // participante escolhido
   const [assistencia, setAssistencia] = useState(undefined); // participante | null ("não houve") | undefined (ainda não escolheu)
+  const [golContra, setGolContra] = useState(false);
   const [erroLocal, setErroLocal] = useState('');
 
   const timeA = dia.times.find((t) => t.id === partida.time_a_id);
@@ -457,11 +483,15 @@ function PartidaAoVivo({ dia, partida, editavel, token, diaId, onMudou, onEncerr
   const jogadoresTimeB = [...(timeB?.titulares || []), ...(timeB?.suplentes || [])];
   const jogadoresDoTimeEscolhido = timeEscolhido === 'a' ? jogadoresTimeA : jogadoresTimeB;
 
+  const eventosA = partida.eventos.filter((ev) => ev.lado === 'a');
+  const eventosB = partida.eventos.filter((ev) => ev.lado === 'b');
+
   function abrirGol() {
     setGolAberto(true);
     setTimeEscolhido('a');
     setMarcador(null);
     setAssistencia(undefined);
+    setGolContra(false);
     setErroLocal('');
   }
 
@@ -469,20 +499,22 @@ function PartidaAoVivo({ dia, partida, editavel, token, diaId, onMudou, onEncerr
     setGolAberto(false);
     setMarcador(null);
     setAssistencia(undefined);
+    setGolContra(false);
   }
 
   function escolherTime(lado) {
     setTimeEscolhido(lado);
     setMarcador(null);
     setAssistencia(undefined);
+    setGolContra(false);
   }
 
   async function confirmarGol() {
     if (!marcador) return;
     setErroLocal('');
     try {
-      const assistenciaId = assistencia ? assistencia.id : null;
-      const resultado = await api.registrarGol(token, diaId, partida.id, marcador.id, assistenciaId);
+      const assistenciaId = !golContra && assistencia ? assistencia.id : null;
+      const resultado = await api.registrarGol(token, diaId, partida.id, marcador.id, assistenciaId, golContra);
       onMudou(resultado);
       cancelarGol();
     } catch (err) {
@@ -498,6 +530,35 @@ function PartidaAoVivo({ dia, partida, editavel, token, diaId, onMudou, onEncerr
     } catch (err) {
       setErroLocal(err.message);
     }
+  }
+
+  function EventoItem({ ev }) {
+    const icone = ev.tipo === 'assistencia' ? 'ads_click' : 'sports_soccer';
+    const rotulo = ev.tipo === 'gol' ? 'gol' : ev.tipo === 'gol_contra' ? 'gol contra' : 'assistência';
+    return (
+      <li className="flex items-center justify-between gap-sm">
+        <span className="text-body-md text-on-surface flex items-center gap-1 min-w-0 truncate">
+          <span
+            className={`material-symbols-outlined text-[16px] shrink-0 ${
+              ev.tipo === 'gol_contra' ? 'text-error' : 'text-on-surface-variant'
+            }`}
+          >
+            {icone}
+          </span>
+          <span className="truncate">
+            {ev.jogador} — {rotulo}
+          </span>
+        </span>
+        {editavel && (
+          <button
+            onClick={() => removerEvento(ev.id)}
+            className="text-error text-label-sm font-label-bold shrink-0 px-2 py-1 rounded-lg hover:bg-error/10"
+          >
+            Desfazer
+          </button>
+        )}
+      </li>
+    );
   }
 
   return (
@@ -574,6 +635,21 @@ function PartidaAoVivo({ dia, partida, editavel, token, diaId, onMudou, onEncerr
               </div>
 
               {marcador && (
+                <label className="flex items-center gap-2 text-body-md text-on-surface">
+                  <input
+                    type="checkbox"
+                    checked={golContra}
+                    onChange={(e) => {
+                      setGolContra(e.target.checked);
+                      setAssistencia(undefined);
+                    }}
+                    className="w-5 h-5 accent-error"
+                  />
+                  Foi gol contra (conta pro time adversário)
+                </label>
+              )}
+
+              {marcador && !golContra && (
                 <>
                   <p className="font-label-bold text-label-sm text-on-surface-variant">Quem deu assistência?</p>
                   <div className="flex flex-wrap gap-xs">
@@ -592,7 +668,12 @@ function PartidaAoVivo({ dia, partida, editavel, token, diaId, onMudou, onEncerr
               )}
 
               <div className="flex gap-sm mt-sm">
-                <Botao variante="primario" disabled={!marcador || assistencia === undefined} onClick={confirmarGol} className="flex-1">
+                <Botao
+                  variante="primario"
+                  disabled={!marcador || (!golContra && assistencia === undefined)}
+                  onClick={confirmarGol}
+                  className="flex-1"
+                >
                   Confirmar gol
                 </Botao>
                 <Botao variante="secundario" onClick={cancelarGol}>
@@ -605,28 +686,18 @@ function PartidaAoVivo({ dia, partida, editavel, token, diaId, onMudou, onEncerr
           {partida.eventos.length > 0 && (
             <div className="border-t border-outline-variant/30 pt-sm">
               <p className="font-label-bold text-label-sm text-on-surface-variant mb-xs">Registrado nessa partida:</p>
-              <ul className="flex flex-col gap-xs">
-                {partida.eventos.map((ev) => (
-                  <li key={ev.id} className="flex items-center justify-between gap-sm">
-                    <span className="text-body-md text-on-surface flex items-center gap-1 min-w-0 truncate">
-                      <span className="material-symbols-outlined text-[16px] text-on-surface-variant shrink-0">
-                        {ev.tipo === 'gol' ? 'sports_soccer' : 'ads_click'}
-                      </span>
-                      <span className="truncate">
-                        {ev.jogador} — {ev.tipo === 'gol' ? 'gol' : 'assistência'}
-                      </span>
-                    </span>
-                    {editavel && (
-                      <button
-                        onClick={() => removerEvento(ev.id)}
-                        className="text-error text-label-sm font-label-bold shrink-0 px-2 py-1 rounded-lg hover:bg-error/10"
-                      >
-                        Desfazer
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <div className="grid grid-cols-2 gap-sm">
+                <ul className="flex flex-col gap-xs">
+                  {eventosA.map((ev) => (
+                    <EventoItem key={ev.id} ev={ev} />
+                  ))}
+                </ul>
+                <ul className="flex flex-col gap-xs">
+                  {eventosB.map((ev) => (
+                    <EventoItem key={ev.id} ev={ev} />
+                  ))}
+                </ul>
+              </div>
             </div>
           )}
 
@@ -641,8 +712,7 @@ function PartidaAoVivo({ dia, partida, editavel, token, diaId, onMudou, onEncerr
   );
 }
 
-// ---------- Painel "Gerenciar times": vagas, remover/devolver jogador, adicionar
-// associado ou visitante no meio do baba, criar e apagar times ----------
+// ---------- Painel "Gerenciar times" ----------
 function PainelGerenciarTimes({ dia, editavel, token, diaId, onMudou }) {
   const [erroLocal, setErroLocal] = useState('');
   const [associados, setAssociados] = useState([]);

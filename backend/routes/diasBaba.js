@@ -1,28 +1,6 @@
 // routes/diasBaba.js
-// "Dia de Baba": criação do evento, organização dos times (com vagas),
-// o motor de fila "vencedor fica" e o registro de gols ao vivo.
-//
-// Regra de permissão geral: qualquer usuário autenticado (admin ou associado)
-// pode VISUALIZAR o histórico e o detalhe. Somente admin escreve.
-//
-// Regra de trava: depois que dia.status === 'finalizado', NENHUMA rota de
-// escrita deste arquivo aceita alterações (exigirAberto()).
-//
-// ---------- Como funciona a fila "vencedor fica" ----------
-// Ao clicar "Iniciar Baba", os times entram numa fila (fila_times) na ordem
-// Time 1, Time 2, Time 3... Os dois primeiros saem da fila e formam a
-// primeira partida (ao vivo). Quando o admin clica "Encerrar partida":
-//   - Se não deu empate: o time vencedor segue direto para a próxima partida;
-//     o perdedor vai para o final da fila; o próximo adversário do vencedor
-//     é quem estiver na frente da fila.
-//   - Se deu empate:
-//       - Havendo 2+ times esperando: os dois times empatados vão para o
-//         final da fila (a ordem entre os dois é decidida por sorteio); a
-//         próxima partida é entre os dois primeiros da fila (times "frescos").
-//       - Havendo 0 ou 1 time esperando: sorteio decide qual dos dois
-//         empatados CONTINUA na quadra; o outro vai para a fila.
-// Tudo isso é reversível uma única vez (PATCH .../reabrir), desde que a
-// partida seguinte ainda não tenha nenhum gol registrado.
+// Organização de times, motor de fila "vencedor fica" e gols ao vivo.
+// Só admin escreve; trava tudo depois que o dia é finalizado.
 
 const express = require('express');
 const db = require('../db');
@@ -101,8 +79,7 @@ function montarDetalhe(diaId) {
   if (!dia) return null;
 
   const times = db.prepare('SELECT * FROM times_dia WHERE dia_baba_id = ? AND ativo = 1 ORDER BY id').all(diaId);
-  // times dissolvidos continuam existindo (só saem da lista ativa), pra partidas
-  // antigas continuarem mostrando o nome certo no histórico
+  // times dissolvidos continuam existindo, pro histórico mostrar o nome certo
   const todosOsTimesJaCriados = db.prepare('SELECT * FROM times_dia WHERE dia_baba_id = ? ORDER BY id').all(diaId);
   const nomePorTime = new Map(todosOsTimesJaCriados.map((t) => [t.id, t.nome]));
 
@@ -147,10 +124,15 @@ function montarDetalhe(diaId) {
     const eventos = db
       .prepare(`SELECT id, tipo, quantidade, escalacao_id FROM eventos_partida WHERE partida_id = ?`)
       .all(partida.id)
-      .map((ev) => ({
-        ...ev,
-        jogador: escalacoes.find((e) => e.id === ev.escalacao_id)?.nome ?? '(removido)',
-      }));
+      .map((ev) => {
+        const escalacaoDoEvento = escalacoes.find((e) => e.id === ev.escalacao_id);
+        const timeDoJogador = escalacaoDoEvento ? timeEfetivo(escalacaoDoEvento, partida) : null;
+        return {
+          ...ev,
+          jogador: escalacaoDoEvento?.nome ?? '(removido)',
+          lado: timeDoJogador === partida.time_a_id ? 'a' : timeDoJogador === partida.time_b_id ? 'b' : null,
+        };
+      });
     return {
       ...partida,
       time_a_nome: nomePorTime.get(partida.time_a_id),
@@ -276,9 +258,7 @@ router.patch('/:id/presentes', autenticar, somenteAdmin, (req, res) => {
   res.json(montarDetalhe(dia.id));
 });
 
-// POST /api/dias-baba/:id/sorteio -> sorteia os times (somente admin, antes de iniciar o baba)
-// Preenche os times em sequência (Time 1 primeiro, até o tamanho do formato,
-// depois Time 2, etc) — assim só o(s) último(s) time(s) ficam com vagas.
+// POST /api/dias-baba/:id/sorteio -> preenche os times em sequência (só o último fica com vaga)
 router.post('/:id/sorteio', autenticar, somenteAdmin, (req, res) => {
   const dia = exigirDia(req, res);
   if (!dia) return;
@@ -337,10 +317,7 @@ router.post('/:id/sorteio', autenticar, somenteAdmin, (req, res) => {
   res.json(montarDetalhe(dia.id));
 });
 
-// PATCH /api/dias-baba/:id/escalacoes/:escalacaoId/suplente -> ocupa/libera uma vaga
-// O jogador continua no seu time original (time_id não muda); só passa a também
-// contar como suplente do time indicado, para completar o número de jogadores.
-// Funciona a qualquer momento enquanto o dia estiver aberto (mesmo com o baba já iniciado).
+// PATCH .../suplente -> empresta o jogador pra outro time (mantém o time original)
 router.patch('/:id/escalacoes/:escalacaoId/suplente', autenticar, somenteAdmin, (req, res) => {
   const dia = exigirDia(req, res);
   if (!dia) return;
@@ -371,8 +348,7 @@ router.patch('/:id/escalacoes/:escalacaoId/suplente', autenticar, somenteAdmin, 
   res.json(montarDetalhe(dia.id));
 });
 
-// PATCH /api/dias-baba/:id/escalacoes/:escalacaoId/time -> move um jogador de vez para outro time
-// (correção manual do admin — diferente de "suplente", que mantém o time original).
+// PATCH .../time -> move o jogador de vez pra outro time (correção manual)
 router.patch('/:id/escalacoes/:escalacaoId/time', autenticar, somenteAdmin, (req, res) => {
   const dia = exigirDia(req, res);
   if (!dia) return;
@@ -398,9 +374,7 @@ router.patch('/:id/escalacoes/:escalacaoId/time', autenticar, somenteAdmin, (req
   res.json(montarDetalhe(dia.id));
 });
 
-// PATCH /api/dias-baba/:id/escalacoes/:escalacaoId/remover -> tira o jogador do time
-// (ex: foi embora mais cedo). Ele NÃO é apagado do Dia de Baba — só fica "sem time",
-// disponível pra voltar depois (ver presentes_sem_time no detalhe).
+// PATCH .../remover -> tira o jogador do time (fica "sem time", não é apagado)
 router.patch('/:id/escalacoes/:escalacaoId/remover', autenticar, somenteAdmin, (req, res) => {
   const dia = exigirDia(req, res);
   if (!dia) return;
@@ -419,7 +393,6 @@ router.patch('/:id/escalacoes/:escalacaoId/remover', autenticar, somenteAdmin, (
 });
 
 // POST /api/dias-baba/:id/escalacoes -> adiciona associado ou convidado no meio do baba
-// body: { associado_id? , convidado_nome?, time_id? }  (time_id opcional; se omitido, fica sem time)
 router.post('/:id/escalacoes', autenticar, somenteAdmin, (req, res) => {
   const dia = exigirDia(req, res);
   if (!dia) return;
@@ -460,8 +433,7 @@ router.post('/:id/escalacoes', autenticar, somenteAdmin, (req, res) => {
   res.status(201).json(montarDetalhe(dia.id));
 });
 
-// POST /api/dias-baba/:id/times -> cria um time vazio (somente admin)
-// Se o baba já estiver rolando, o time novo entra no final da fila.
+// POST /api/dias-baba/:id/times -> cria um time vazio (entra na fila se o baba já rolou)
 router.post('/:id/times', autenticar, somenteAdmin, (req, res) => {
   const dia = exigirDia(req, res);
   if (!dia) return;
@@ -481,10 +453,7 @@ router.post('/:id/times', autenticar, somenteAdmin, (req, res) => {
   void novoId;
 });
 
-// DELETE /api/dias-baba/:id/times/:timeId -> dissolve um time (jogadores viram "sem time")
-// Não apaga a linha do time de verdade: se ele já jogou alguma partida, precisa
-// continuar existindo pro histórico mostrar o nome certo. Só fica de fora da
-// lista de times ativos e sai da fila. Só é bloqueado se estiver jogando AGORA.
+// DELETE .../times/:timeId -> dissolve o time (jogadores viram "sem time", histórico preservado)
 router.delete('/:id/times/:timeId', autenticar, somenteAdmin, (req, res) => {
   const dia = exigirDia(req, res);
   if (!dia) return;
@@ -519,8 +488,6 @@ router.delete('/:id/times/:timeId', autenticar, somenteAdmin, (req, res) => {
 });
 
 // PATCH /api/dias-baba/:id/fila -> reordena manualmente a fila de espera
-// body: { ordem: [time_id, time_id, ...] } — precisa ser exatamente o mesmo
-// conjunto de times que já está na fila, só em outra ordem.
 router.patch('/:id/fila', autenticar, somenteAdmin, (req, res) => {
   const dia = exigirDia(req, res);
   if (!dia) return;
@@ -571,9 +538,7 @@ router.post('/:id/iniciar-baba', autenticar, somenteAdmin, (req, res) => {
   res.status(201).json(montarDetalhe(dia.id));
 });
 
-// PATCH /api/dias-baba/:id/partidas/:partidaId/iniciar -> confirma o início do próximo confronto
-// Fica um passo antes da tela ao vivo: mostra "Time X x Time Y" e só libera o registro
-// de gols depois que o admin confirmar aqui.
+// PATCH .../iniciar -> confirma o início do próximo confronto, libera o registro de gols
 router.patch('/:id/partidas/:partidaId/iniciar', autenticar, somenteAdmin, (req, res) => {
   const dia = exigirDia(req, res);
   if (!dia) return;
@@ -591,13 +556,15 @@ router.patch('/:id/partidas/:partidaId/iniciar', autenticar, somenteAdmin, (req,
 
 // helper: qual time (efetivo) uma escalação está representando nessa partida
 function timeEfetivo(escalacao, partida) {
-  const candidato = escalacao.eh_suplente_para_time_id ?? escalacao.time_id;
-  if (candidato === partida.time_a_id || candidato === partida.time_b_id) return candidato;
+  const timesDaPartida = [partida.time_a_id, partida.time_b_id];
+  if (escalacao.eh_suplente_para_time_id != null && timesDaPartida.includes(escalacao.eh_suplente_para_time_id)) {
+    return escalacao.eh_suplente_para_time_id;
+  }
+  if (timesDaPartida.includes(escalacao.time_id)) return escalacao.time_id;
   return null;
 }
 
-// POST /api/dias-baba/:id/partidas/:partidaId/gol -> registra gol (+ assistência opcional) ao vivo
-// body: { escalacao_id, assistencia_escalacao_id? }
+// body: { escalacao_id, assistencia_escalacao_id?, contra? }
 router.post('/:id/partidas/:partidaId/gol', autenticar, somenteAdmin, (req, res) => {
   const dia = exigirDia(req, res);
   if (!dia) return;
@@ -611,28 +578,35 @@ router.post('/:id/partidas/:partidaId/gol', autenticar, somenteAdmin, (req, res)
     return res.status(400).json({ erro: 'Inicie a partida antes de registrar um gol.' });
   }
 
-  const { escalacao_id, assistencia_escalacao_id } = req.body;
+  const { escalacao_id, assistencia_escalacao_id, contra } = req.body;
 
   const artilheiro = db.prepare('SELECT * FROM escalacoes WHERE id = ? AND dia_baba_id = ?').get(escalacao_id, dia.id);
   if (!artilheiro) return res.status(400).json({ erro: 'Jogador inválido.' });
-  const timeDoGol = timeEfetivo(artilheiro, partida);
-  if (!timeDoGol) return res.status(400).json({ erro: 'Esse jogador não está em quadra nessa partida.' });
+  const timeDoJogador = timeEfetivo(artilheiro, partida);
+  if (!timeDoJogador) return res.status(400).json({ erro: 'Esse jogador não está em quadra nessa partida.' });
+
+  // Gol contra soma pro adversário do time do jogador, e não vale assistência
+  const timeCreditado = contra
+    ? timeDoJogador === partida.time_a_id
+      ? partida.time_b_id
+      : partida.time_a_id
+    : timeDoJogador;
 
   let assistente = null;
-  if (assistencia_escalacao_id != null) {
+  if (!contra && assistencia_escalacao_id != null) {
     assistente = db.prepare('SELECT * FROM escalacoes WHERE id = ? AND dia_baba_id = ?').get(assistencia_escalacao_id, dia.id);
     if (!assistente) return res.status(400).json({ erro: 'Jogador da assistência inválido.' });
-    if (timeEfetivo(assistente, partida) !== timeDoGol) {
+    if (timeEfetivo(assistente, partida) !== timeDoJogador) {
       return res.status(400).json({ erro: 'A assistência precisa ser de alguém do mesmo time do gol.' });
     }
   }
 
   db.transaction(() => {
-    const coluna = timeDoGol === partida.time_a_id ? 'gols_time_a' : 'gols_time_b';
+    const coluna = timeCreditado === partida.time_a_id ? 'gols_time_a' : 'gols_time_b';
     db.prepare(`UPDATE partidas SET ${coluna} = ${coluna} + 1 WHERE id = ?`).run(partida.id);
     db.prepare(
-      `INSERT INTO eventos_partida (partida_id, escalacao_id, tipo, quantidade) VALUES (?, ?, 'gol', 1)`
-    ).run(partida.id, artilheiro.id);
+      `INSERT INTO eventos_partida (partida_id, escalacao_id, tipo, quantidade) VALUES (?, ?, ?, 1)`
+    ).run(partida.id, artilheiro.id, contra ? 'gol_contra' : 'gol');
     if (assistente) {
       db.prepare(
         `INSERT INTO eventos_partida (partida_id, escalacao_id, tipo, quantidade) VALUES (?, ?, 'assistencia', 1)`
@@ -660,11 +634,17 @@ router.delete('/:id/partidas/:partidaId/eventos/:eventoId', autenticar, somenteA
   if (!evento) return res.status(404).json({ erro: 'Evento não encontrado.' });
 
   db.transaction(() => {
-    if (evento.tipo === 'gol') {
+    if (evento.tipo === 'gol' || evento.tipo === 'gol_contra') {
       const escalacao = db.prepare('SELECT * FROM escalacoes WHERE id = ?').get(evento.escalacao_id);
-      const timeDoGol = timeEfetivo(escalacao, partida);
-      if (timeDoGol) {
-        const coluna = timeDoGol === partida.time_a_id ? 'gols_time_a' : 'gols_time_b';
+      const timeDoJogador = timeEfetivo(escalacao, partida);
+      if (timeDoJogador) {
+        const timeCreditado =
+          evento.tipo === 'gol_contra'
+            ? timeDoJogador === partida.time_a_id
+              ? partida.time_b_id
+              : partida.time_a_id
+            : timeDoJogador;
+        const coluna = timeCreditado === partida.time_a_id ? 'gols_time_a' : 'gols_time_b';
         db.prepare(`UPDATE partidas SET ${coluna} = MAX(0, ${coluna} - 1) WHERE id = ?`).run(partida.id);
       }
     }
@@ -742,8 +722,7 @@ router.patch('/:id/partidas/:partidaId/encerrar', autenticar, somenteAdmin, (req
   res.json({ ...detalhe, mensagem_desempate: mensagem });
 });
 
-// PATCH /api/dias-baba/:id/partidas/:partidaId/reabrir -> desfaz o encerramento de uma partida
-// Só funciona se a partida seguinte (criada automaticamente) ainda não teve nenhum gol lançado.
+// PATCH .../reabrir -> desfaz o encerramento (só se a partida seguinte ainda não teve gol)
 router.patch('/:id/partidas/:partidaId/reabrir', autenticar, somenteAdmin, (req, res) => {
   const dia = exigirDia(req, res);
   if (!dia) return;
@@ -791,9 +770,7 @@ router.patch('/:id/finalizar', autenticar, somenteAdmin, (req, res) => {
   if (temTimes === 0) {
     return res.status(400).json({ erro: 'Sorteie os times antes de finalizar o Dia de Baba.' });
   }
-  // Só bloqueia se houver uma partida REALMENTE ao vivo (já iniciada). Se o próximo
-  // confronto ainda está só pendente (esperando o admin clicar "Iniciar partida"),
-  // ele nunca aconteceu de verdade — descarta ele e finaliza o dia normalmente.
+  // só bloqueia se houver partida realmente ao vivo (pendente é descartada)
   const partidaAoVivo = db
     .prepare('SELECT * FROM partidas WHERE dia_baba_id = ? AND encerrada = 0 AND iniciada = 1')
     .get(dia.id);

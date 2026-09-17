@@ -1,7 +1,5 @@
 // routes/desempenhos.js
-// Seção "Desempenhos": estatísticas e rankings dos associados (mensal/anual).
-// Leitura disponível para admin E associado — ninguém edita nada por aqui,
-// os números vêm sempre calculados a partir das partidas já registradas.
+// Rankings dos associados (mensal/anual), somente leitura.
 
 const express = require('express');
 const { autenticar } = require('../middleware/auth');

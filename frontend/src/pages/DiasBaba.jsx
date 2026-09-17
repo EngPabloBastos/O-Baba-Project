@@ -1,6 +1,5 @@
 // src/pages/DiasBaba.jsx
-// Histórico de todos os Dias de Baba já criados. Visível para admin e associado;
-// só o admin vê o botão de criar um novo.
+// Histórico dos Dias de Baba.
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';

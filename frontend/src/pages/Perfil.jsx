@@ -1,6 +1,5 @@
 // src/pages/Perfil.jsx
-// Tela que um associado (não-admin) vê ao logar: a própria ficha, sem poder editar
-// (edição é feita pelo admin, conforme as regras do backend) — exceto a própria senha.
+// Ficha do associado logado, com opção de trocar a própria senha.
 
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';

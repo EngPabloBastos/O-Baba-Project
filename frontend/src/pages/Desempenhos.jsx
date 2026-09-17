@@ -1,6 +1,5 @@
 // src/pages/Desempenhos.jsx
-// Estatísticas e rankings dos associados (mensal/anual). Disponível para admin
-// e associado — ninguém edita nada aqui, tudo vem calculado das partidas.
+// Rankings dos associados, mensal e anual.
 
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
