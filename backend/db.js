@@ -216,6 +216,48 @@ db.exec(`
   }
 }
 
+// ---------- VITÓRIAS POR PARTIDA ----------
+// Registra, no momento em que uma partida é encerrada, quais escalações (jogadores)
+// venceram aquele confronto específico. Isso substitui o cálculo antigo, que olhava
+// o time_id ATUAL do jogador na hora de somar as estatísticas: se alguém trocasse de
+// time depois (ex: João jogou pelo Time 5, que perdeu tudo, e depois é movido pro
+// Time 2), ele acabava herdando as vitórias do Time 2 sem ter jogado por ele. Agora
+// a vitória fica fixada nos jogadores certos desde a hora que a partida terminou.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS vitorias_partida (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    partida_id INTEGER NOT NULL REFERENCES partidas(id) ON DELETE CASCADE,
+    escalacao_id INTEGER NOT NULL REFERENCES escalacoes(id) ON DELETE CASCADE
+  );
+`);
+
+// Migração: preenche vitorias_partida para partidas encerradas antes dessa tabela
+// existir, usando a composição de time atual de cada jogador — é a melhor informação
+// disponível, já que o time exato de cada partida antiga não ficava guardado. Roda só
+// uma vez (a tabela nasce vazia); daqui pra frente cada partida grava sua vitória no
+// momento certo, então trocas de time futuras não afetam mais o histórico.
+if (db.prepare('SELECT COUNT(*) AS n FROM vitorias_partida').get().n === 0) {
+  const partidasComVencedor = db
+    .prepare(`SELECT * FROM partidas WHERE encerrada = 1 AND gols_time_a <> gols_time_b`)
+    .all();
+  const inserirVitoriaMigracao = db.prepare(
+    'INSERT INTO vitorias_partida (partida_id, escalacao_id) VALUES (?, ?)'
+  );
+  for (const partida of partidasComVencedor) {
+    const timeVencedor = partida.gols_time_a > partida.gols_time_b ? partida.time_a_id : partida.time_b_id;
+    const escalacoesVencedoras = db
+      .prepare(
+        `SELECT id FROM escalacoes
+         WHERE dia_baba_id = ? AND associado_id IS NOT NULL
+           AND (time_id = ? OR eh_suplente_para_time_id = ?)`
+      )
+      .all(partida.dia_baba_id, timeVencedor, timeVencedor);
+    for (const esc of escalacoesVencedoras) {
+      inserirVitoriaMigracao.run(partida.id, esc.id);
+    }
+  }
+}
+
 // ---------- Reinício mensal do status de pagamento ----------
 // No dia 1 de cada mês (primeira vez que o servidor checa depois disso),
 // todo associado volta para "nao_pago". Guardamos o último mês já processado

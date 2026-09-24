@@ -9,6 +9,24 @@ const { calcularEstatisticas } = require('../lib/estatisticas');
 
 const router = express.Router();
 
+// Senha de confirmação extra pra apagar um Dia de Baba (evita apagar sem querer um
+// dia com estatísticas reais; pensada pra remover dias de teste). Segue o mesmo
+// padrão da exclusão de admin em routes/admins.js.
+const SENHA_EXCLUSAO_DIA_BABA = 'adm.ragnarock';
+
+// Escalações (jogadores) que efetivamente venceram jogando pelo time indicado —
+// usado pra gravar a vitória de cada um no momento em que a partida é encerrada.
+function escalacaoIdsDoTimeVencedor(diaId, timeId) {
+  return db
+    .prepare(
+      `SELECT id FROM escalacoes
+       WHERE dia_baba_id = ? AND associado_id IS NOT NULL
+         AND (time_id = ? OR eh_suplente_para_time_id = ?)`
+    )
+    .all(diaId, timeId, timeId)
+    .map((r) => r.id);
+}
+
 function tamanhoTime(formato) {
   return formato === '4x4' ? 4 : 5;
 }
@@ -678,6 +696,12 @@ router.patch('/:id/partidas/:partidaId/encerrar', autenticar, somenteAdmin, (req
     if (partida.gols_time_a !== partida.gols_time_b) {
       const vencedor = partida.gols_time_a > partida.gols_time_b ? partida.time_a_id : partida.time_b_id;
       const perdedor = partida.gols_time_a > partida.gols_time_b ? partida.time_b_id : partida.time_a_id;
+
+      const inserirVitoria = db.prepare('INSERT INTO vitorias_partida (partida_id, escalacao_id) VALUES (?, ?)');
+      for (const escalacaoId of escalacaoIdsDoTimeVencedor(dia.id, vencedor)) {
+        inserirVitoria.run(partida.id, escalacaoId);
+      }
+
       pushFila(dia.id, perdedor);
       novoTimeA = vencedor;
       novoTimeB = popFila(dia.id);
@@ -745,6 +769,9 @@ router.patch('/:id/partidas/:partidaId/reabrir', autenticar, somenteAdmin, (req,
   }
 
   db.transaction(() => {
+    // desfaz a vitória gravada pra essa partida — ela deixou de estar encerrada
+    db.prepare('DELETE FROM vitorias_partida WHERE partida_id = ?').run(partida.id);
+
     // precisa zerar a referência ANTES de apagar a linha, senão a foreign key barra o DELETE
     db.prepare(
       `UPDATE partidas SET encerrada = 0, encerrada_em = NULL, fila_antes_encerrar = NULL,
@@ -796,6 +823,25 @@ router.patch('/:id/finalizar', autenticar, somenteAdmin, (req, res) => {
   })();
 
   res.json(montarDetalhe(dia.id));
+});
+
+// DELETE /api/dias-baba/:id -> apaga definitivamente um Dia de Baba (somente admin)
+// Existe pra remover dias de teste por engano; por isso exige a senha extra, evitando
+// apagar sem querer um dia com estatísticas reais. Apaga em qualquer status (aberto
+// ou finalizado) — o FK ON DELETE CASCADE cuida de escalações, times, partidas,
+// eventos, vitórias e fila desse dia.
+router.delete('/:id', autenticar, somenteAdmin, (req, res) => {
+  const dia = exigirDia(req, res);
+  if (!dia) return;
+
+  const { senha_confirmacao } = req.body;
+  if (senha_confirmacao !== SENHA_EXCLUSAO_DIA_BABA) {
+    return res.status(401).json({ erro: 'Senha de confirmação incorreta.' });
+  }
+
+  db.prepare('DELETE FROM dias_baba WHERE id = ?').run(dia.id);
+
+  res.json({ mensagem: 'Dia de Baba excluído com sucesso.' });
 });
 
 module.exports = router;

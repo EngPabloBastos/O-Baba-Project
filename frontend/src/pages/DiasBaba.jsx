@@ -22,6 +22,21 @@ export default function DiasBaba() {
       .finally(() => setCarregando(false));
   }, [token]);
 
+  async function excluirDia(dia) {
+    const dataFormatada = new Date(`${dia.data}T00:00:00`).toLocaleDateString('pt-BR');
+    const senha = window.prompt(
+      `Pra apagar o Dia de Baba de ${dataFormatada}, digite a senha de confirmação:`
+    );
+    if (senha === null) return; // cancelou
+    setErro('');
+    try {
+      await api.excluirDiaBaba(token, dia.id, senha);
+      setDias((atual) => atual.filter((d) => d.id !== dia.id));
+    } catch (err) {
+      setErro(err.message);
+    }
+  }
+
   return (
     <div className="flex flex-col w-full pb-20">
       <Secao className="flex-row items-center justify-between pt-lg">
@@ -47,26 +62,38 @@ export default function DiasBaba() {
           <p className="text-body-md text-on-surface-variant">Nenhum Dia de Baba registrado ainda.</p>
         ) : (
           dias.map((d) => (
-            <Link key={d.id} to={`/dias-baba/${d.id}`}>
-              <Cartao className="flex items-center justify-between gap-md transition-transform active:scale-[0.98]">
-                <div className="flex items-center gap-md min-w-0">
-                  <div className="w-11 h-11 rounded-xl bg-primary-container/10 flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-primary">sports_soccer</span>
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-label-bold text-on-surface">
-                      {new Date(`${d.data}T00:00:00`).toLocaleDateString('pt-BR')}
-                    </span>
-                    <span className="text-label-sm text-on-surface-variant">
-                      {d.formato || 'sem formato'} · {d.total_presentes} presentes · {d.total_partidas} partidas
-                    </span>
-                  </div>
+            <Cartao key={d.id} className="flex items-center justify-between gap-md">
+              <Link
+                to={`/dias-baba/${d.id}`}
+                className="flex items-center gap-md min-w-0 flex-1 transition-transform active:scale-[0.98]"
+              >
+                <div className="w-11 h-11 rounded-xl bg-primary-container/10 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-primary">sports_soccer</span>
                 </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-label-bold text-on-surface">
+                    {new Date(`${d.data}T00:00:00`).toLocaleDateString('pt-BR')}
+                  </span>
+                  <span className="text-label-sm text-on-surface-variant">
+                    {d.formato || 'sem formato'} · {d.total_presentes} presentes · {d.total_partidas} partidas
+                  </span>
+                </div>
+              </Link>
+              <div className="flex items-center gap-sm shrink-0">
                 <Etiqueta tom={d.status === 'aberto' ? 'amarelo' : 'neutro'}>
                   {d.status === 'aberto' ? 'Em andamento' : 'Finalizado'}
                 </Etiqueta>
-              </Cartao>
-            </Link>
+                {isAdmin && (
+                  <button
+                    onClick={() => excluirDia(d)}
+                    title="Apagar Dia de Baba"
+                    className="w-9 h-9 flex items-center justify-center rounded-full text-error hover:bg-error/10 transition-colors shrink-0"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">delete</span>
+                  </button>
+                )}
+              </div>
+            </Cartao>
           ))
         )}
       </Secao>

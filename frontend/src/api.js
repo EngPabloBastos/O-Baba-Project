@@ -128,6 +128,8 @@ export const api = {
     request(`/api/dias-baba/${id}/partidas/${partidaId}/reabrir`, { method: 'PATCH', token }),
   finalizarDiaBaba: (token, id) =>
     request(`/api/dias-baba/${id}/finalizar`, { method: 'PATCH', body: {}, token }),
+  excluirDiaBaba: (token, id, senhaConfirmacao) =>
+    request(`/api/dias-baba/${id}`, { method: 'DELETE', body: { senha_confirmacao: senhaConfirmacao }, token }),
 
   // ---- desempenhos ----
   buscarDesempenhos: (token, { periodo, ano, mes } = {}) => {

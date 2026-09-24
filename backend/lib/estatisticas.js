@@ -48,25 +48,22 @@ function calcularEstatisticas(filtros = {}) {
       )
       .all(idDia);
 
-    const escalacoes = db.prepare(`SELECT * FROM escalacoes WHERE dia_baba_id = ?`).all(idDia);
-
-    function associadosQueJogaramPeloTime(timeId) {
-      return escalacoes
-        .filter((e) => e.associado_id != null && (e.time_id === timeId || e.eh_suplente_para_time_id === timeId))
-        .map((e) => e.associado_id);
-    }
-
     for (const partida of partidas) {
-      if (partida.gols_time_a > partida.gols_time_b) {
-        for (const associadoId of associadosQueJogaramPeloTime(partida.time_a_id)) {
-          garantir(associadoId).vitorias += 1;
-        }
-      } else if (partida.gols_time_b > partida.gols_time_a) {
-        for (const associadoId of associadosQueJogaramPeloTime(partida.time_b_id)) {
-          garantir(associadoId).vitorias += 1;
-        }
+      // Vitórias ficam gravadas por jogador desde o momento em que a partida foi
+      // encerrada (ver vitorias_partida em db.js) — não são mais derivadas do time
+      // atual de cada um, que pode mudar depois e embaralhar o histórico.
+      const vencedores = db
+        .prepare(
+          `SELECT e.associado_id AS associado_id
+           FROM vitorias_partida v
+           JOIN escalacoes e ON e.id = v.escalacao_id
+           WHERE v.partida_id = ?`
+        )
+        .all(partida.id);
+      for (const { associado_id: associadoId } of vencedores) {
+        if (associadoId == null) continue;
+        garantir(associadoId).vitorias += 1;
       }
-      // empate: ninguém ganha vitória
 
       const eventos = db
         .prepare(
