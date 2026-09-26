@@ -11,7 +11,7 @@ const db = require('../db');
  *   - ano apenas -> estatísticas daquele ano inteiro
  *   - nenhum     -> estatísticas de todo o histórico
  *   - diaBabaId  -> restringe a um único Dia de Baba (usado na revisão pré-finalização)
- * @returns {Array<{associado_id:number, nome:string, apelido:string|null, gols:number, assistencias:number, vitorias:number, pontuacao:number}>}
+ * @returns {Array<{associado_id:number, nome:string, apelido:string|null, gols:number, assistencias:number, vitorias:number, jogos:number, ga:number, media_ga:number, pontuacao:number}>}
  */
 function calcularEstatisticas(filtros = {}) {
   const { ano, mes, diaBabaId } = filtros;
@@ -32,11 +32,11 @@ function calcularEstatisticas(filtros = {}) {
   }
   const diasRelevantes = db.prepare(sqlDias).all(...paramsDias).map((d) => d.id);
 
-  const acumulado = new Map(); // associado_id -> { gols, assistencias, vitorias }
+  const acumulado = new Map(); // associado_id -> { gols, assistencias, vitorias, jogos }
 
   function garantir(associadoId) {
     if (!acumulado.has(associadoId)) {
-      acumulado.set(associadoId, { gols: 0, assistencias: 0, vitorias: 0 });
+      acumulado.set(associadoId, { gols: 0, assistencias: 0, vitorias: 0, jogos: 0 });
     }
     return acumulado.get(associadoId);
   }
@@ -49,6 +49,19 @@ function calcularEstatisticas(filtros = {}) {
       .all(idDia);
 
     for (const partida of partidas) {
+      // "Jogos": todo associado que efetivamente esteve em quadra nessa partida
+      // (titular de um dos dois times, ou suplente que entrou por um deles).
+      const participantes = db
+        .prepare(
+          `SELECT DISTINCT associado_id FROM escalacoes
+           WHERE dia_baba_id = ? AND associado_id IS NOT NULL
+             AND (time_id IN (?, ?) OR eh_suplente_para_time_id IN (?, ?))`
+        )
+        .all(idDia, partida.time_a_id, partida.time_b_id, partida.time_a_id, partida.time_b_id);
+      for (const { associado_id: associadoId } of participantes) {
+        garantir(associadoId).jogos += 1;
+      }
+
       // Vitórias ficam gravadas por jogador desde o momento em que a partida foi
       // encerrada (ver vitorias_partida em db.js) — não são mais derivadas do time
       // atual de cada um, que pode mudar depois e embaralhar o histórico.
@@ -97,6 +110,8 @@ function calcularEstatisticas(filtros = {}) {
       const s = acumulado.get(id);
       const info = infoPorId.get(id);
       const pontuacao = s.gols * 3 + s.assistencias * 2 + s.vitorias * 1;
+      const ga = s.gols + s.assistencias;
+      const mediaGa = s.jogos > 0 ? ga / s.jogos : 0;
       return {
         associado_id: id,
         nome: info?.nome ?? '(associado removido)',
@@ -104,6 +119,9 @@ function calcularEstatisticas(filtros = {}) {
         gols: s.gols,
         assistencias: s.assistencias,
         vitorias: s.vitorias,
+        jogos: s.jogos,
+        ga,
+        media_ga: mediaGa,
         pontuacao,
       };
     })

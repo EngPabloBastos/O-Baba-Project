@@ -5,11 +5,12 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
-import { Avatar, Botao, Campo, Cartao, Etiqueta, Secao, Titulo } from '../components/ui.jsx';
+import { Avatar, Botao, Campo, Cartao, Etiqueta, Secao, Titulo, BlocoEstatisticas } from '../components/ui.jsx';
 
 export default function Perfil() {
   const { token } = useAuth();
   const [perfil, setPerfil] = useState(null);
+  const [desempenho, setDesempenho] = useState(null);
   const [erro, setErro] = useState('');
 
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -22,6 +23,8 @@ export default function Perfil() {
 
   useEffect(() => {
     api.buscarMeuPerfil(token).then(setPerfil).catch((err) => setErro(err.message));
+    // periodo 'geral' = totais de toda a carreira, não só do mês/ano atual
+    api.buscarMeuDesempenho(token, 'geral').then((r) => setDesempenho(r.estatisticas));
   }, [token]);
 
   function limparFormularioSenha() {
@@ -82,6 +85,8 @@ export default function Perfil() {
                 </Etiqueta>
                 <Etiqueta tom={perfil.ativo ? 'neutro' : 'vermelho'}>{perfil.ativo ? 'Ativo' : 'Inativo'}</Etiqueta>
               </div>
+
+              {desempenho && <BlocoEstatisticas desempenho={desempenho} />}
             </Cartao>
 
             <p className="text-label-sm text-on-surface-variant text-center px-md">

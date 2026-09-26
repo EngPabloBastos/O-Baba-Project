@@ -15,6 +15,7 @@ import DiasBaba from './pages/DiasBaba.jsx';
 import DiaBabaForm from './pages/DiaBabaForm.jsx';
 import DiaBabaDetalhe from './pages/DiaBabaDetalhe.jsx';
 import Desempenhos from './pages/Desempenhos.jsx';
+import PerfilJogador from './pages/PerfilJogador.jsx';
 
 export default function App() {
   const { isAdmin } = useAuth();
@@ -95,6 +96,16 @@ export default function App() {
           element={
             <RotaProtegida>
               <Desempenhos />
+            </RotaProtegida>
+          }
+        />
+
+        {/* Perfil somente leitura de outro jogador — qualquer usuário logado pode ver */}
+        <Route
+          path="/jogadores/:id"
+          element={
+            <RotaProtegida>
+              <PerfilJogador />
             </RotaProtegida>
           }
         />

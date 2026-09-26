@@ -137,6 +137,12 @@ export const api = {
     if (periodo !== 'anual' && mes) params.set('mes', mes);
     return request(`/api/desempenhos?${params.toString()}`, { token });
   },
+  // periodo 'geral' traz o total de todo o histórico (usado no Perfil)
+  buscarMeuDesempenho: (token, periodo = 'geral') =>
+    request(`/api/desempenhos/me?periodo=${periodo}`, { token }),
+  // perfil (com estatísticas) de outro jogador, visível pra qualquer usuário logado
+  buscarDesempenhoDoAssociado: (token, associadoId, periodo = 'geral') =>
+    request(`/api/desempenhos/${associadoId}?periodo=${periodo}`, { token }),
   buscarRanking: (token, { tipo, periodo, ano, mes } = {}) => {
     const params = new URLSearchParams({
       tipo: tipo || 'pontuacao',

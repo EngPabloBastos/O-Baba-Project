@@ -2,6 +2,7 @@
 // Rankings dos associados, mensal e anual.
 
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
@@ -11,7 +12,8 @@ const TIPOS = [
   { valor: 'pontuacao', rotulo: 'Pontuação', icone: 'military_tech' },
   { valor: 'gols', rotulo: 'Gols', icone: 'sports_soccer' },
   { valor: 'assistencias', rotulo: 'Assistências', icone: 'ads_click' },
-  { valor: 'vitorias', rotulo: 'Vitórias', icone: 'emoji_events' },
+  { valor: 'ga', rotulo: 'G/A', icone: 'insights' },
+  { valor: 'media_ga', rotulo: 'G/A por jogo', icone: 'speed' },
 ];
 
 const ANO_ATUAL = new Date().getFullYear();
@@ -140,10 +142,12 @@ export default function Desempenhos() {
           ranking.map((r) => {
             const souEu = r.associado_id === usuario.id;
             const corPodio = r.posicao <= 3 ? CORES_PODIO[r.posicao - 1] : 'bg-surface-container text-on-surface-variant';
-            return (
+            const valorExibido = tipo === 'media_ga' ? r.media_ga.toFixed(2) : r[tipo];
+            const conteudo = (
               <Cartao
-                key={r.associado_id}
-                className={`flex items-center gap-md ${souEu ? 'border-2 border-primary' : ''}`}
+                className={`flex items-center gap-md ${souEu ? 'border-2 border-primary' : ''} ${
+                  souEu ? '' : 'transition-transform active:scale-[0.98]'
+                }`}
               >
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center font-label-bold shrink-0 ${corPodio}`}>
                   {r.posicao}
@@ -158,8 +162,15 @@ export default function Desempenhos() {
                     {r.gols}G · {r.assistencias}A · {r.vitorias}V
                   </span>
                 </div>
-                <span className="font-headline-md text-headline-md text-primary shrink-0">{r[tipo]}</span>
+                <span className="font-headline-md text-headline-md text-primary shrink-0">{valorExibido}</span>
               </Cartao>
+            );
+            return souEu ? (
+              <div key={r.associado_id}>{conteudo}</div>
+            ) : (
+              <Link key={r.associado_id} to={`/jogadores/${r.associado_id}`}>
+                {conteudo}
+              </Link>
             );
           })
         )}

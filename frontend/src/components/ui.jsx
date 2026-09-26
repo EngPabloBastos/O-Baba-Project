@@ -84,6 +84,40 @@ export function Secao({ children, className = '' }) {
   return <div className={`px-container-padding flex flex-col gap-sm pt-md ${className}`}>{children}</div>;
 }
 
+// Bloco de estatísticas do jogador (usado no próprio Perfil e no perfil de outros
+// jogadores). Espera um objeto no formato devolvido por /api/desempenhos/me ou
+// /api/desempenhos/:associadoId (jogos, gols, assistencias, ga, media_ga).
+export function BlocoEstatisticas({ desempenho }) {
+  if (!desempenho) return null;
+
+  const linhas = [
+    { rotulo: 'Jogos', valor: desempenho.jogos, icone: 'event' },
+    { rotulo: 'Gols', valor: desempenho.gols, icone: 'sports_soccer' },
+    { rotulo: 'Assistências', valor: desempenho.assistencias, icone: 'ads_click' },
+    { rotulo: 'G/A', valor: desempenho.ga, icone: 'insights' },
+    { rotulo: 'G/A (por jogo)', valor: desempenho.media_ga.toFixed(2), icone: 'speed' },
+  ];
+
+  return (
+    <div className="w-full mt-sm pt-md border-t border-surface-variant flex flex-col gap-sm">
+      <p className="font-label-bold text-label-sm text-on-surface-variant uppercase tracking-wider">
+        Estatísticas
+      </p>
+      <div className="flex flex-col gap-2">
+        {linhas.map((l) => (
+          <div key={l.rotulo} className="flex items-center justify-between">
+            <span className="text-body-md text-on-surface-variant flex items-center gap-1">
+              <span className="material-symbols-outlined text-[18px]">{l.icone}</span>
+              {l.rotulo}
+            </span>
+            <span className="font-label-bold text-body-md text-on-surface">{l.valor}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Avatar circular com iniciais (não temos foto de perfil real no sistema)
 export function Avatar({ nome = '', tamanho = 40, tom = 'neutro' }) {
   const inicial = nome.trim().charAt(0).toUpperCase() || '?';
