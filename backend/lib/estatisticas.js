@@ -11,7 +11,7 @@ const db = require('../db');
  *   - ano apenas -> estatísticas daquele ano inteiro
  *   - nenhum     -> estatísticas de todo o histórico
  *   - diaBabaId  -> restringe a um único Dia de Baba (usado na revisão pré-finalização)
- * @returns {Array<{associado_id:number, nome:string, apelido:string|null, gols:number, assistencias:number, vitorias:number, jogos:number, ga:number, media_ga:number, pontuacao:number}>}
+ * @returns {Array<{associado_id:number, nome:string, apelido:string|null, foto_url:string|null, gols:number, assistencias:number, vitorias:number, empates:number, jogos:number, ga:number, media_ga:number, pontuacao:number}>}
  */
 function calcularEstatisticas(filtros = {}) {
   const { ano, mes, diaBabaId } = filtros;
@@ -36,7 +36,7 @@ function calcularEstatisticas(filtros = {}) {
 
   function garantir(associadoId) {
     if (!acumulado.has(associadoId)) {
-      acumulado.set(associadoId, { gols: 0, assistencias: 0, vitorias: 0, jogos: 0 });
+      acumulado.set(associadoId, { gols: 0, assistencias: 0, vitorias: 0, empates: 0, jogos: 0 });
     }
     return acumulado.get(associadoId);
   }
@@ -78,6 +78,20 @@ function calcularEstatisticas(filtros = {}) {
         garantir(associadoId).vitorias += 1;
       }
 
+      // Empates ficam gravados por jogador do mesmo jeito (ver empates_partida em db.js).
+      const empatantes = db
+        .prepare(
+          `SELECT e.associado_id AS associado_id
+           FROM empates_partida em
+           JOIN escalacoes e ON e.id = em.escalacao_id
+           WHERE em.partida_id = ?`
+        )
+        .all(partida.id);
+      for (const { associado_id: associadoId } of empatantes) {
+        if (associadoId == null) continue;
+        garantir(associadoId).empates += 1;
+      }
+
       const eventos = db
         .prepare(
           `SELECT ev.*, e.associado_id AS associado_id
@@ -101,7 +115,7 @@ function calcularEstatisticas(filtros = {}) {
 
   const placeholders = associadoIds.map(() => '?').join(',');
   const associados = db
-    .prepare(`SELECT id, nome, apelido FROM associados WHERE id IN (${placeholders})`)
+    .prepare(`SELECT id, nome, apelido, foto_url FROM associados WHERE id IN (${placeholders})`)
     .all(...associadoIds);
   const infoPorId = new Map(associados.map((a) => [a.id, a]));
 
@@ -109,16 +123,19 @@ function calcularEstatisticas(filtros = {}) {
     .map((id) => {
       const s = acumulado.get(id);
       const info = infoPorId.get(id);
-      const pontuacao = s.gols * 3 + s.assistencias * 2 + s.vitorias * 1;
+      // 4 pts/gol, 3 pts/assistência, 2 pts/vitória, 1 pt/empate
+      const pontuacao = s.gols * 4 + s.assistencias * 3 + s.vitorias * 2 + s.empates * 1;
       const ga = s.gols + s.assistencias;
       const mediaGa = s.jogos > 0 ? ga / s.jogos : 0;
       return {
         associado_id: id,
         nome: info?.nome ?? '(associado removido)',
         apelido: info?.apelido ?? null,
+        foto_url: info?.foto_url ?? null,
         gols: s.gols,
         assistencias: s.assistencias,
         vitorias: s.vitorias,
+        empates: s.empates,
         jogos: s.jogos,
         ga,
         media_ga: mediaGa,

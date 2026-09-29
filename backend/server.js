@@ -9,6 +9,8 @@ const adminsRoutes = require('./routes/admins');
 const associadosRoutes = require('./routes/associados');
 const diasBabaRoutes = require('./routes/diasBaba');
 const desempenhosRoutes = require('./routes/desempenhos');
+const premiacoesRoutes = require('./routes/premiacoes');
+const { PASTA_UPLOADS } = require('./lib/fotos');
 
 const app = express();
 
@@ -24,6 +26,10 @@ app.use('/api/admins', adminsRoutes);
 app.use('/api/associados', associadosRoutes);
 app.use('/api/dias-baba', diasBabaRoutes);
 app.use('/api/desempenhos', desempenhosRoutes);
+app.use('/api/premiacoes', premiacoesRoutes);
+
+// Fotos de perfil enviadas pelos associados (ver lib/fotos.js)
+app.use('/uploads', express.static(PASTA_UPLOADS));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

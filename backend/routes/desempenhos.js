@@ -23,14 +23,16 @@ function periodoDaQuery(req) {
   return { periodo, ano, mes };
 }
 
-function estatisticasVazias(associadoId, nome, apelido) {
+function estatisticasVazias(associadoId, nome, apelido, fotoUrl = null) {
   return {
     associado_id: associadoId,
     nome,
     apelido,
+    foto_url: fotoUrl,
     gols: 0,
     assistencias: 0,
     vitorias: 0,
+    empates: 0,
     jogos: 0,
     ga: 0,
     media_ga: 0,
@@ -57,7 +59,12 @@ router.get('/me', autenticar, (req, res) => {
   }
   const { periodo, ano, mes } = periodoDaQuery(req);
   const estatisticas = calcularEstatisticas({ ano, mes });
-  const meu = estatisticas.find((e) => e.associado_id === req.user.id) || estatisticasVazias(req.user.id, req.user.nome, null);
+  const meu =
+    estatisticas.find((e) => e.associado_id === req.user.id) ||
+    (() => {
+      const a = db.prepare('SELECT nome, apelido, foto_url FROM associados WHERE id = ?').get(req.user.id);
+      return estatisticasVazias(req.user.id, a?.nome ?? req.user.nome, a?.apelido ?? null, a?.foto_url ?? null);
+    })();
   res.json({ periodo, ano, mes: mes ?? null, estatisticas: meu });
 });
 
@@ -83,7 +90,7 @@ router.get('/:associadoId', autenticar, (req, res) => {
     return res.status(400).json({ erro: 'Associado inválido.' });
   }
 
-  const associado = db.prepare('SELECT id, nome, apelido FROM associados WHERE id = ?').get(associadoId);
+  const associado = db.prepare('SELECT id, nome, apelido, foto_url FROM associados WHERE id = ?').get(associadoId);
   if (!associado) {
     return res.status(404).json({ erro: 'Associado não encontrado.' });
   }
@@ -92,7 +99,7 @@ router.get('/:associadoId', autenticar, (req, res) => {
   const estatisticas = calcularEstatisticas({ ano, mes });
   const dele =
     estatisticas.find((e) => e.associado_id === associadoId) ||
-    estatisticasVazias(associadoId, associado.nome, associado.apelido);
+    estatisticasVazias(associadoId, associado.nome, associado.apelido, associado.foto_url);
   res.json({ periodo, ano, mes: mes ?? null, estatisticas: dele });
 });
 

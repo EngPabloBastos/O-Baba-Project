@@ -5,12 +5,13 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../db');
 const { autenticar, somenteAdmin } = require('../middleware/auth');
+const { receberFoto, removerArquivo } = require('../lib/fotos');
 
 const router = express.Router();
 
 // Campos "públicos" que qualquer pessoa logada (admin ou associado) pode ver.
 // Nunca devolvemos senha_hash em nenhuma rota.
-const CAMPOS_PUBLICOS = 'id, nome, apelido, telefone, status_pagamento, ativo, criado_em';
+const CAMPOS_PUBLICOS = 'id, nome, apelido, telefone, status_pagamento, ativo, foto_url, criado_em';
 
 // reset mensal do status de pagamento
 router.use((req, res, next) => {
@@ -115,6 +116,34 @@ router.patch('/me/senha', autenticar, (req, res) => {
   db.prepare('UPDATE associados SET senha_hash = ? WHERE id = ?').run(novaSenhaHash, req.user.id);
 
   res.json({ mensagem: 'Senha alterada com sucesso.' });
+});
+
+// PATCH /api/associados/me/foto  -> o próprio associado troca a foto de perfil
+// multipart/form-data, campo "foto" (jpeg/png/webp, até 3MB)
+router.patch('/me/foto', autenticar, (req, res, next) => {
+  if (req.user.role !== 'associado') {
+    return res.status(403).json({ erro: 'Rota disponível apenas para associados.' });
+  }
+  next();
+}, receberFoto, (req, res) => {
+  const anterior = db.prepare('SELECT foto_url FROM associados WHERE id = ?').get(req.user.id);
+  const novaUrl = `/uploads/fotos/${req.file.filename}`;
+
+  db.prepare('UPDATE associados SET foto_url = ? WHERE id = ?').run(novaUrl, req.user.id);
+  if (anterior?.foto_url) removerArquivo(anterior.foto_url);
+
+  res.json({ foto_url: novaUrl });
+});
+
+// DELETE /api/associados/me/foto  -> volta a mostrar as iniciais
+router.delete('/me/foto', autenticar, (req, res) => {
+  if (req.user.role !== 'associado') {
+    return res.status(403).json({ erro: 'Rota disponível apenas para associados.' });
+  }
+  const anterior = db.prepare('SELECT foto_url FROM associados WHERE id = ?').get(req.user.id);
+  db.prepare('UPDATE associados SET foto_url = NULL WHERE id = ?').run(req.user.id);
+  if (anterior?.foto_url) removerArquivo(anterior.foto_url);
+  res.json({ mensagem: 'Foto removida.' });
 });
 
 // PUT /api/associados/:id  -> editar dados (status de pagamento tem rota própria)

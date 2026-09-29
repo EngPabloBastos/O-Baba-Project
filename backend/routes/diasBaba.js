@@ -707,6 +707,19 @@ router.patch('/:id/partidas/:partidaId/encerrar', autenticar, somenteAdmin, (req
       novoTimeB = popFila(dia.id);
     } else {
       const empatados = [partida.time_a_id, partida.time_b_id];
+
+      const inserirEmpate = db.prepare('INSERT INTO empates_partida (partida_id, escalacao_id) VALUES (?, ?)');
+      const participantes = db
+        .prepare(
+          `SELECT id FROM escalacoes
+           WHERE dia_baba_id = ? AND associado_id IS NOT NULL
+             AND (time_id IN (?, ?) OR eh_suplente_para_time_id IN (?, ?))`
+        )
+        .all(dia.id, empatados[0], empatados[1], empatados[0], empatados[1]);
+      for (const esc of participantes) {
+        inserirEmpate.run(partida.id, esc.id);
+      }
+
       const esperando = filaAntes.length;
 
       if (esperando >= 2) {
@@ -769,8 +782,9 @@ router.patch('/:id/partidas/:partidaId/reabrir', autenticar, somenteAdmin, (req,
   }
 
   db.transaction(() => {
-    // desfaz a vitória gravada pra essa partida — ela deixou de estar encerrada
+    // desfaz a vitória/empate gravado pra essa partida — ela deixou de estar encerrada
     db.prepare('DELETE FROM vitorias_partida WHERE partida_id = ?').run(partida.id);
+    db.prepare('DELETE FROM empates_partida WHERE partida_id = ?').run(partida.id);
 
     // precisa zerar a referência ANTES de apagar a linha, senão a foreign key barra o DELETE
     db.prepare(

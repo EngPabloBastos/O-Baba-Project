@@ -47,6 +47,12 @@ const colunasAssociados = db.prepare('PRAGMA table_info(associados)').all().map(
 if (!colunasAssociados.includes('status_pagamento')) {
   db.exec(`ALTER TABLE associados ADD COLUMN status_pagamento TEXT NOT NULL DEFAULT 'nao_pago'`);
 }
+// Foto de perfil: guarda só o caminho público (ex: "/uploads/fotos/12.jpg"); o
+// arquivo em si fica em disco, na mesma pasta do banco (ver lib/fotos.js), pra
+// usar o mesmo volume persistente que já existe pro DB_PATH.
+if (!colunasAssociados.includes('foto_url')) {
+  db.exec(`ALTER TABLE associados ADD COLUMN foto_url TEXT`);
+}
 for (const coluna of ['posicao', 'nivel']) {
   if (colunasAssociados.includes(coluna)) {
     try {
@@ -254,6 +260,65 @@ if (db.prepare('SELECT COUNT(*) AS n FROM vitorias_partida').get().n === 0) {
       .all(partida.dia_baba_id, timeVencedor, timeVencedor);
     for (const esc of escalacoesVencedoras) {
       inserirVitoriaMigracao.run(partida.id, esc.id);
+    }
+  }
+}
+
+// ---------- PREMIAÇÕES (Hall da Fama) ----------
+// Uma linha por vencedor de cada prêmio em cada período. As automáticas (artilheiro,
+// garçom, melhor por pontos) são calculadas ao "fechar" o período; as por voto
+// (melhor por voto, xerife, melhor goleiro) o admin lança à mão. mes = 0 nas anuais.
+// Tabela nova: nenhuma tabela/dado existente é alterado.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS premiacoes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo TEXT NOT NULL,
+    periodo TEXT NOT NULL CHECK (periodo IN ('mensal', 'anual')),
+    ano INTEGER NOT NULL,
+    mes INTEGER NOT NULL DEFAULT 0,
+    associado_id INTEGER NOT NULL REFERENCES associados(id) ON DELETE CASCADE,
+    valor INTEGER,
+    origem TEXT NOT NULL CHECK (origem IN ('automatica', 'manual')),
+    criado_por INTEGER,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  -- por voto: só um vencedor por prêmio em cada mês/ano
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_premiacoes_manual_unica
+    ON premiacoes (tipo, periodo, ano, mes) WHERE origem = 'manual';
+  CREATE INDEX IF NOT EXISTS idx_premiacoes_associado ON premiacoes (associado_id);
+`);
+
+// ---------- EMPATES POR PARTIDA ----------
+// Assim como vitorias_partida, mas pro caso de empate: TODOS os jogadores de AMBOS
+// os times daquela partida específica recebem o registro (ninguém "perde" o empate).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS empates_partida (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    partida_id INTEGER NOT NULL REFERENCES partidas(id) ON DELETE CASCADE,
+    escalacao_id INTEGER NOT NULL REFERENCES escalacoes(id) ON DELETE CASCADE
+  );
+`);
+
+// Migração: preenche empates_partida pras partidas empatadas já encerradas antes
+// dessa tabela existir (mesma lógica de composição de time atual — ver o comentário
+// equivalente da migração de vitorias_partida, acima).
+if (db.prepare('SELECT COUNT(*) AS n FROM empates_partida').get().n === 0) {
+  const partidasEmpatadas = db
+    .prepare(`SELECT * FROM partidas WHERE encerrada = 1 AND gols_time_a = gols_time_b`)
+    .all();
+  const inserirEmpateMigracao = db.prepare(
+    'INSERT INTO empates_partida (partida_id, escalacao_id) VALUES (?, ?)'
+  );
+  for (const partida of partidasEmpatadas) {
+    const participantes = db
+      .prepare(
+        `SELECT id FROM escalacoes
+         WHERE dia_baba_id = ? AND associado_id IS NOT NULL
+           AND (time_id IN (?, ?) OR eh_suplente_para_time_id IN (?, ?))`
+      )
+      .all(partida.dia_baba_id, partida.time_a_id, partida.time_b_id, partida.time_a_id, partida.time_b_id);
+    for (const esc of participantes) {
+      inserirEmpateMigracao.run(partida.id, esc.id);
     }
   }
 }
