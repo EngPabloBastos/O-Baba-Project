@@ -61,25 +61,42 @@ export default function DiasBaba() {
         ) : dias.length === 0 ? (
           <p className="text-body-md text-on-surface-variant">Nenhum Dia de Baba registrado ainda.</p>
         ) : (
-          dias.map((d) => (
-            <Cartao key={d.id} className="flex items-center justify-between gap-md">
+          dias.map((d, i) => (
+            <Cartao
+              key={d.id}
+              className={`flex items-start justify-between gap-md ${i === 0 ? 'border-l-4 border-l-primary' : ''}`}
+            >
               <Link
                 to={`/dias-baba/${d.id}`}
-                className="flex items-center gap-md min-w-0 flex-1 transition-transform active:scale-[0.98]"
+                className="flex flex-col gap-sm min-w-0 flex-1 transition-transform active:scale-[0.98]"
               >
-                <div className="w-11 h-11 rounded-xl bg-primary-container/10 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-primary">sports_soccer</span>
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="font-label-bold text-on-surface">
-                    {new Date(`${d.data}T00:00:00`).toLocaleDateString('pt-BR')}
+                {i === 0 && (
+                  <span className="font-label-bold text-label-sm text-primary uppercase tracking-[0.12em]">
+                    Mais recente
                   </span>
-                  <span className="text-label-sm text-on-surface-variant">
-                    {d.formato || 'sem formato'} · {d.total_presentes} presentes · {d.total_partidas} partidas
-                  </span>
+                )}
+                <span className="font-headline-md text-[18px] leading-tight text-on-surface">
+                  {new Date(`${d.data}T00:00:00`).toLocaleDateString('pt-BR', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </span>
+                <div className="flex flex-wrap gap-xs">
+                  {[d.formato || 'Sem formato', `${d.total_presentes} presentes`, `${d.total_partidas} partidas`].map(
+                    (texto) => (
+                      <span
+                        key={texto}
+                        className="bg-surface-container text-on-surface-variant rounded-full px-sm py-[3px] text-label-sm"
+                      >
+                        {texto}
+                      </span>
+                    )
+                  )}
                 </div>
               </Link>
-              <div className="flex items-center gap-sm shrink-0">
+              <div className="flex flex-col items-end gap-sm shrink-0">
                 <Etiqueta tom={d.status === 'aberto' ? 'amarelo' : 'neutro'}>
                   {d.status === 'aberto' ? 'Em andamento' : 'Finalizado'}
                 </Etiqueta>

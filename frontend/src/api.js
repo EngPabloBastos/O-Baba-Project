@@ -4,6 +4,26 @@
 // Vazio em produção (mesma origem do backend); ?? mantém isso mesmo sendo string vazia
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
+// Fotos de perfil vêm do backend como caminho relativo (ex: "/uploads/fotos/12.jpg").
+// Em produção isso já funciona sozinho (mesma origem), mas em dev o frontend roda
+// numa porta diferente da API, então precisa do endereço completo do backend.
+export const urlArquivo = (caminho) => (caminho ? `${API_URL}${caminho}` : null);
+
+async function requestMultipart(path, { method = 'PATCH', arquivo, campo = 'foto', token } = {}) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const formData = new FormData();
+  formData.append(campo, arquivo);
+
+  const resposta = await fetch(`${API_URL}${path}`, { method, headers, body: formData });
+  const dados = await resposta.json().catch(() => ({}));
+
+  if (!resposta.ok) {
+    throw new Error(dados.erro || `Erro ${resposta.status} ao chamar ${path}`);
+  }
+  return dados;
+}
+
 async function request(path, { method = 'GET', body, token } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -48,6 +68,8 @@ export const api = {
   },
   buscarAssociado: (token, id) => request(`/api/associados/${id}`, { token }),
   buscarMeuPerfil: (token) => request('/api/associados/me', { token }),
+  enviarFotoPerfil: (token, arquivo) => requestMultipart('/api/associados/me/foto', { arquivo, token }),
+  removerFotoPerfil: (token) => request('/api/associados/me/foto', { method: 'DELETE', token }),
   trocarMinhaSenha: (token, senhaAtual, senhaNova) =>
     request('/api/associados/me/senha', {
       method: 'PATCH',
@@ -143,6 +165,33 @@ export const api = {
   // perfil (com estatísticas) de outro jogador, visível pra qualquer usuário logado
   buscarDesempenhoDoAssociado: (token, associadoId, periodo = 'geral') =>
     request(`/api/desempenhos/${associadoId}?periodo=${periodo}`, { token }),
+
+  // ---- premiações (Hall da Fama) ----
+  buscarPeriodosPremiacoes: (token) => request('/api/premiacoes/periodos', { token }),
+  buscarPremiacoes: (token, { periodo, ano, mes }) => {
+    const params = new URLSearchParams({ periodo, ano });
+    if (periodo === 'mensal') params.set('mes', mes);
+    return request(`/api/premiacoes?${params.toString()}`, { token });
+  },
+  buscarConquistas: (token, associadoId) => request(`/api/premiacoes/jogador/${associadoId}`, { token }),
+  // admin: calcula e grava as 3 premiações automáticas do período
+  fecharPeriodoPremiacoes: (token, dados) =>
+    request('/api/premiacoes/fechar', { method: 'POST', body: dados, token }),
+  // admin: lança quem ganhou um prêmio por voto (exige a senha de confirmação)
+  lancarPremiacaoPorVoto: (token, dados, senhaConfirmacao) =>
+    request('/api/premiacoes/voto', {
+      method: 'POST',
+      body: { ...dados, senha_confirmacao: senhaConfirmacao },
+      token,
+    }),
+  removerPremiacao: (token, id, senhaConfirmacao) =>
+    request(`/api/premiacoes/${id}`, { method: 'DELETE', body: { senha_confirmacao: senhaConfirmacao }, token }),
+  removerPremiacoesDoPeriodo: (token, dados, senhaConfirmacao) =>
+    request('/api/premiacoes/periodo', {
+      method: 'DELETE',
+      body: { ...dados, senha_confirmacao: senhaConfirmacao },
+      token,
+    }),
   buscarRanking: (token, { tipo, periodo, ano, mes } = {}) => {
     const params = new URLSearchParams({
       tipo: tipo || 'pontuacao',

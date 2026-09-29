@@ -4,10 +4,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, urlArquivo } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
 import { Avatar, Cartao, Etiqueta, Secao, Titulo, BlocoEstatisticas } from '../components/ui.jsx';
+import { BlocoConquistas } from '../components/Conquistas.jsx';
 
 export default function PerfilJogador() {
   const { id } = useParams();
@@ -15,6 +16,7 @@ export default function PerfilJogador() {
   const { token, usuario } = useAuth();
   const [associado, setAssociado] = useState(null);
   const [desempenho, setDesempenho] = useState(null);
+  const [conquistas, setConquistas] = useState(null);
   const [erro, setErro] = useState('');
 
   useEffect(() => {
@@ -26,8 +28,10 @@ export default function PerfilJogador() {
     setErro('');
     setAssociado(null);
     setDesempenho(null);
+    setConquistas(null);
     api.buscarAssociado(token, id).then(setAssociado).catch((err) => setErro(err.message));
     api.buscarDesempenhoDoAssociado(token, id, 'geral').then((r) => setDesempenho(r.estatisticas));
+    api.buscarConquistas(token, id).then(setConquistas);
   }, [token, id, usuario, navigate]);
 
   return (
@@ -43,7 +47,7 @@ export default function PerfilJogador() {
       {associado && (
         <Secao>
           <Cartao className="flex flex-col items-center text-center gap-sm py-lg">
-            <Avatar nome={associado.apelido || associado.nome} tamanho={72} tom="verde" />
+            <Avatar nome={associado.apelido || associado.nome} foto={urlArquivo(associado.foto_url)} tamanho={88} tom="verde" />
             <div>
               <p className="font-headline-md text-headline-md text-on-surface">{associado.nome}</p>
               {associado.apelido && <p className="text-body-md text-on-surface-variant">{associado.apelido}</p>}
@@ -62,8 +66,14 @@ export default function PerfilJogador() {
               </Etiqueta>
             </div>
 
-            {desempenho && <BlocoEstatisticas desempenho={desempenho} />}
           </Cartao>
+        </Secao>
+      )}
+
+      {associado && (
+        <Secao>
+          <BlocoConquistas conquistas={conquistas} />
+          <BlocoEstatisticas desempenho={desempenho} />
         </Secao>
       )}
     </div>

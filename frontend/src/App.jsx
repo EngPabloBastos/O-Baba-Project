@@ -16,6 +16,7 @@ import DiaBabaForm from './pages/DiaBabaForm.jsx';
 import DiaBabaDetalhe from './pages/DiaBabaDetalhe.jsx';
 import Desempenhos from './pages/Desempenhos.jsx';
 import PerfilJogador from './pages/PerfilJogador.jsx';
+import HallDaFama from './pages/HallDaFama.jsx';
 
 export default function App() {
   const { isAdmin } = useAuth();
@@ -96,6 +97,15 @@ export default function App() {
           element={
             <RotaProtegida>
               <Desempenhos />
+            </RotaProtegida>
+          }
+        />
+
+        <Route
+          path="/hall-da-fama"
+          element={
+            <RotaProtegida>
+              <HallDaFama />
             </RotaProtegida>
           }
         />

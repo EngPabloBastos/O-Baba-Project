@@ -13,9 +13,10 @@ export default function Layout({ children }) {
   const [escuro, setEscuro] = useState(() => document.documentElement.classList.contains('dark'));
 
   const itensNav = [
-    { path: '/', label: 'Início', icone: 'dashboard' },
-    { path: '/dias-baba', label: 'Dia de Baba', icone: 'sports_soccer' },
+    { path: '/', label: 'Início', icone: 'account_circle' },
     { path: '/desempenhos', label: 'Rankings', icone: 'leaderboard' },
+    { path: '/hall-da-fama', label: 'Hall da Fama', icone: 'military_tech' },
+    { path: '/dias-baba', label: 'Dias de Baba', icone: 'calendar_month' },
     ...(isAdmin ? [{ path: '/admins', label: 'Admins', icone: 'admin_panel_settings' }] : []),
   ];
 
@@ -68,19 +69,25 @@ export default function Layout({ children }) {
         <div className="max-w-2xl mx-auto">{children}</div>
       </main>
 
-      <nav className="fixed bottom-0 w-full z-50 pb-safe bg-surface/80 backdrop-blur-xl shadow-[0_-1px_8px_rgba(0,0,0,0.04)]">
+      <nav className="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl border-t border-on-surface/5">
         <div className="flex justify-between items-center h-20 px-sm max-w-2xl mx-auto">
           {itensNav.map((item) => (
             <Link
               key={item.path}
               to={item.path}
               aria-current={ativo(item.path) ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center flex-1 h-touch-target-min gap-[2px] transition-colors ${
+              className={`flex flex-col items-center justify-center flex-1 h-touch-target-min gap-1 transition-colors ${
                 ativo(item.path) ? 'text-primary font-bold' : 'text-on-surface-variant'
               }`}
             >
-              <span className={`material-symbols-outlined ${ativo(item.path) ? 'icon-filled' : ''}`}>{item.icone}</span>
-              <span className="text-label-sm font-label-sm">{item.label}</span>
+              <span
+                className={`flex items-center justify-center h-8 px-4 rounded-full transition-colors ${
+                  ativo(item.path) ? 'bg-primary text-on-primary' : ''
+                }`}
+              >
+                <span className={`material-symbols-outlined ${ativo(item.path) ? 'icon-filled' : ''}`}>{item.icone}</span>
+              </span>
+              <span className="text-[11px] leading-none font-label-sm whitespace-nowrap">{item.label}</span>
             </Link>
           ))}
         </div>

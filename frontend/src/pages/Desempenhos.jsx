@@ -6,7 +6,8 @@ import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Alerta from '../components/Alerta.jsx';
-import { Avatar, Cartao, Secao, Titulo } from '../components/ui.jsx';
+import { Avatar, Cartao, RotuloSecao, Secao, Titulo } from '../components/ui.jsx';
+import { urlArquivo } from '../api.js';
 
 const TIPOS = [
   { valor: 'pontuacao', rotulo: 'Pontuação', icone: 'military_tech' },
@@ -24,6 +25,46 @@ const NOMES_MESES = [
 ];
 
 const CORES_PODIO = ['bg-tertiary-fixed text-on-tertiary-fixed-variant', 'bg-surface-container-high text-on-surface', 'bg-[#e6c199] text-[#5c3a1e]'];
+
+const ALTURA_DEGRAU = { 1: 'pt-0', 2: 'pt-lg', 3: 'pt-xl' };
+const TAMANHO_AVATAR = { 1: 72, 2: 56, 3: 56 };
+
+function Podio({ top3, tipoAtual, souEu }) {
+  if (top3.length === 0) return null;
+  // ordem visual: 2º à esquerda, 1º no meio (mais alto), 3º à direita
+  const ordem = [top3[1], top3[0], top3[2]].filter(Boolean);
+
+  return (
+    <Cartao className="flex flex-col gap-md">
+      <RotuloSecao>Pódio</RotuloSecao>
+      <div className="flex items-end justify-center gap-sm">
+        {ordem.map((r) => (
+          <Link
+            key={r.associado_id}
+            to={`/jogadores/${r.associado_id}`}
+            className={`flex flex-col items-center text-center gap-1 flex-1 min-w-0 ${ALTURA_DEGRAU[r.posicao]}`}
+          >
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center font-label-bold text-label-sm ${CORES_PODIO[r.posicao - 1]}`}>
+              {r.posicao}
+            </span>
+            <Avatar
+              nome={r.apelido || r.nome}
+              foto={urlArquivo(r.foto_url)}
+              tamanho={TAMANHO_AVATAR[r.posicao]}
+              tom={souEu(r) ? 'verde' : 'neutro'}
+            />
+            <span className="font-label-bold text-label-sm text-on-surface truncate max-w-full">
+              {r.apelido || r.nome}
+            </span>
+            <span className="font-headline-md text-[18px] leading-none text-primary tabular-nums">
+              {tipoAtual.valor === 'media_ga' ? r.media_ga.toFixed(2) : r[tipoAtual.valor]}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </Cartao>
+  );
+}
 
 export default function Desempenhos() {
   const { token, usuario } = useAuth();
@@ -133,7 +174,14 @@ export default function Desempenhos() {
         </Secao>
       )}
 
+      {!carregando && ranking.length > 0 && (
+        <Secao className="pt-0">
+          <Podio top3={ranking.slice(0, 3)} tipoAtual={tipoAtual} souEu={(r) => r.associado_id === usuario.id} />
+        </Secao>
+      )}
+
       <Secao className="gap-sm">
+        {!carregando && ranking.length > 0 && <RotuloSecao>Classificação completa</RotuloSecao>}
         {carregando ? (
           <p className="text-body-md text-on-surface-variant">Carregando...</p>
         ) : ranking.length === 0 ? (
@@ -152,7 +200,7 @@ export default function Desempenhos() {
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center font-label-bold shrink-0 ${corPodio}`}>
                   {r.posicao}
                 </div>
-                <Avatar nome={r.apelido || r.nome} tamanho={40} tom={souEu ? 'verde' : 'neutro'} />
+                <Avatar nome={r.apelido || r.nome} foto={urlArquivo(r.foto_url)} tamanho={40} tom={souEu ? 'verde' : 'neutro'} />
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="font-label-bold text-on-surface truncate">
                     {r.apelido || r.nome}
